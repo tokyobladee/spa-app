@@ -1,0 +1,73 @@
+# Comments SPA
+
+Comments SPA is a production-oriented threaded comments application. Users can create top-level comments, reply to any comment, attach supported files, preview formatted text, and receive live updates.
+
+## Core Capabilities
+
+- Threaded comments with unlimited replies.
+- Top-level comment table with sorting by user name, e-mail, and creation date.
+- Default LIFO ordering and 25-item pagination.
+- Required user name, e-mail, CAPTCHA, and comment text fields.
+- Optional home page and file attachment fields.
+- Server-owned persistence for comments, user identity data, attachments, and operational metadata.
+- Architecture prepared for queue processing, caching, events, JWT-protected flows, WebSocket updates, Elasticsearch indexing, and load testing.
+
+## Stack
+
+- TypeScript
+- NestJS API
+- React + Vite SPA
+- TypeORM
+- MySQL 8
+- Redis
+- RabbitMQ
+- Elasticsearch
+- Docker Compose
+- Jest, Supertest, Playwright, and k6
+
+## Getting Started
+
+Install dependencies:
+
+```bash
+pnpm install
+```
+
+Create local environment configuration:
+
+```bash
+cp .env.example .env
+```
+
+Start infrastructure:
+
+```bash
+pnpm docker:up
+```
+
+Run database migrations:
+
+```bash
+pnpm --filter @comments/api migration:run
+```
+
+Start the applications:
+
+```bash
+pnpm dev
+```
+
+The API runs on `http://localhost:3000` and the SPA runs on `http://localhost:5173`.
+
+## Verification
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+## Database Schema
+
+The MySQL schema export is stored in `database/schema.sql`.
