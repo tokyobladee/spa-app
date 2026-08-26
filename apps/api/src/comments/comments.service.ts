@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { CaptchaService } from "../captcha/captcha.service";
+import { FilesService } from "../files/files.service";
 import { CommentTextPolicy } from "../security/comment-text.policy";
 import { UsersService } from "../users/users.service";
 import { CommentsMapper } from "./comments.mapper";
@@ -26,6 +27,7 @@ export class CommentsService {
     private readonly users: UsersService,
     private readonly captcha: CaptchaService,
     private readonly textPolicy: CommentTextPolicy,
+    private readonly files: FilesService,
     private readonly mapper: CommentsMapper
   ) {}
 
@@ -71,7 +73,7 @@ export class CommentsService {
       .getMany();
   }
 
-  async create(input: CreateCommentDto, metadata: RequestMetadata) {
+  async create(input: CreateCommentDto, metadata: RequestMetadata, file?: Express.Multer.File) {
     await this.captcha.verify(input.captchaId, input.captchaValue);
 
     const parent = input.parentId ? await this.getCommentOrThrow(input.parentId) : null;
@@ -97,8 +99,10 @@ export class CommentsService {
 
     const saved = await this.comments.save(comment);
     saved.materializedPath = parent ? `${parent.materializedPath}.${saved.id}` : saved.id;
+    const persisted = await this.comments.save(saved);
+    persisted.attachments = await this.files.attachToComment(persisted, file);
 
-    return this.mapper.toItem(await this.comments.save(saved));
+    return this.mapper.toItem(persisted);
   }
 
   preview(text: string) {

@@ -123,10 +123,13 @@ function CommentRow({
     <>
       <tr>
         <td>{comment.author.userName}</td>
-        <td>{comment.author.email}</td>
-        <td>{new Date(comment.createdAt).toLocaleString()}</td>
-        <td><CommentHtml html={comment.sanitizedHtml} /></td>
-        <td>
+      <td>{comment.author.email}</td>
+      <td>{new Date(comment.createdAt).toLocaleString()}</td>
+      <td>
+        <CommentHtml html={comment.sanitizedHtml} />
+        <Attachments comment={comment} />
+      </td>
+      <td>
           <div className="row-actions">
             <button type="button" onClick={() => void toggleReplies()}>
               {expanded ? "Hide" : `Show ${comment.repliesCount}`}
@@ -151,6 +154,7 @@ function CommentRow({
                       <span>{new Date(reply.createdAt).toLocaleString()}</span>
                     </div>
                     <CommentHtml html={reply.sanitizedHtml} />
+                    <Attachments comment={reply} />
                   </article>
                 ))}
               </div>
@@ -160,6 +164,22 @@ function CommentRow({
         </tr>
       ) : null}
     </>
+  );
+}
+
+function Attachments({ comment }: { comment: CommentItem }) {
+  if (comment.attachments.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="attachments">
+      {comment.attachments.map((attachment) => (
+        <a key={attachment.id} href={attachment.url} target="_blank" rel="noreferrer">
+          {attachment.originalName}
+        </a>
+      ))}
+    </div>
   );
 }
 

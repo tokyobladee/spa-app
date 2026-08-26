@@ -22,6 +22,7 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
   const [form, setForm] = useState(initialForm);
   const [captcha, setCaptcha] = useState<CaptchaChallenge | null>(null);
   const [previewHtml, setPreviewHtml] = useState("");
+  const [attachment, setAttachment] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -50,6 +51,7 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
   async function handleFile(file: File | null) {
     setFileError(null);
     setFilePreview(null);
+    setAttachment(null);
 
     if (!file) {
       return;
@@ -62,6 +64,7 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
       return;
     }
 
+    setAttachment(file);
     setFilePreview(await createFilePreview(file));
   }
 
@@ -92,9 +95,14 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
         payload.homePage = form.homePage;
       }
 
+      if (attachment) {
+        payload.attachment = attachment;
+      }
+
       await onSubmit(payload);
       setForm(initialForm);
       setPreviewHtml("");
+      setAttachment(null);
       setFilePreview(null);
       await refreshCaptcha();
     } catch (error) {

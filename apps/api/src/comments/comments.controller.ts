@@ -1,4 +1,18 @@
-import { Body, Controller, Get, Headers, Ip, Param, ParseUUIDPipe, Post, Query } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Ip,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  UploadedFile,
+  UseInterceptors
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { memoryStorage } from "multer";
 import { CommentsService } from "./comments.service";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { ListCommentsQueryDto } from "./dto/list-comments-query.dto";
@@ -19,15 +33,28 @@ export class CommentsController {
   }
 
   @Post()
+  @UseInterceptors(
+    FileInterceptor("attachment", {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024
+      }
+    })
+  )
   create(
     @Body() body: CreateCommentDto,
     @Ip() ipAddress: string,
-    @Headers("user-agent") userAgent?: string
+    @Headers("user-agent") userAgent?: string,
+    @UploadedFile() attachment?: Express.Multer.File
   ) {
-    return this.comments.create(body, {
-      ipAddress,
-      userAgent: userAgent ?? null
-    });
+    return this.comments.create(
+      body,
+      {
+        ipAddress,
+        userAgent: userAgent ?? null
+      },
+      attachment
+    );
   }
 
   @Post("preview")

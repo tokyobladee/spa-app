@@ -13,6 +13,7 @@ export interface CreateCommentPayload {
   captchaId: string;
   captchaValue: string;
   text: string;
+  attachment?: File;
 }
 
 export interface ListCommentsParams {
@@ -43,6 +44,29 @@ export class CommentsApi {
   }
 
   async createComment(payload: CreateCommentPayload): Promise<CommentItem> {
+    if (payload.attachment) {
+      const body = new FormData();
+      body.set("userName", payload.userName);
+      body.set("email", payload.email);
+      body.set("captchaId", payload.captchaId);
+      body.set("captchaValue", payload.captchaValue);
+      body.set("text", payload.text);
+      body.set("attachment", payload.attachment);
+
+      if (payload.parentId) {
+        body.set("parentId", payload.parentId);
+      }
+
+      if (payload.homePage) {
+        body.set("homePage", payload.homePage);
+      }
+
+      return this.request<CommentItem>("/api/comments", {
+        method: "POST",
+        body
+      });
+    }
+
     return this.request<CommentItem>("/api/comments", {
       method: "POST",
       headers: {

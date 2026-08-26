@@ -260,6 +260,22 @@ th {
   color: #47645d;
 }
 
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.attachments a {
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #edf2ef;
+  color: #184d47;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .pagination {
   justify-content: flex-end;
   margin-top: 16px;
