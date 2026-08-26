@@ -2,6 +2,7 @@ import { Body, Controller, Get, Headers, Ip, Param, ParseUUIDPipe, Post, Query }
 import { CommentsService } from "./comments.service";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { ListCommentsQueryDto } from "./dto/list-comments-query.dto";
+import { PreviewCommentDto } from "./dto/preview-comment.dto";
 
 @Controller("comments")
 export class CommentsController {
@@ -27,5 +28,10 @@ export class CommentsController {
       ipAddress,
       userAgent: userAgent ?? null
     });
+  }
+
+  @Post("preview")
+  preview(@Body() body: PreviewCommentDto) {
+    return this.comments.preview(body.text);
   }
 }

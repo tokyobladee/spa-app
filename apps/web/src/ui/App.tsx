@@ -1,9 +1,10 @@
-import type { CommentSortField, SortDirection } from "@comments/shared";
-
-const sortableFields: CommentSortField[] = ["createdAt", "userName", "email"];
-const sortDirections: SortDirection[] = ["desc", "asc"];
+import { CommentForm } from "../features/comments/CommentForm";
+import { CommentsTable } from "../features/comments/CommentsTable";
+import { useComments } from "../features/comments/useComments";
 
 export function App() {
+  const comments = useComments();
+
   return (
     <main className="app-shell">
       <section className="comments-board" aria-labelledby="comments-title">
@@ -12,74 +13,24 @@ export function App() {
             <p className="eyebrow">Live threaded discussion</p>
             <h1 id="comments-title">Comments</h1>
           </div>
-          <button type="button" className="primary-action">
-            Add comment
+          <button type="button" className="primary-action" onClick={() => void comments.refresh()}>
+            Refresh
           </button>
         </header>
 
-        <form className="comment-form">
-          <label>
-            User Name
-            <input name="userName" pattern="[A-Za-z0-9]+" required />
-          </label>
-          <label>
-            E-mail
-            <input name="email" type="email" required />
-          </label>
-          <label>
-            Home page
-            <input name="homePage" type="url" />
-          </label>
-          <label>
-            Text
-            <textarea name="text" required rows={5} />
-          </label>
-          <div className="toolbar" aria-label="Formatting">
-            <button type="button">i</button>
-            <button type="button">strong</button>
-            <button type="button">code</button>
-            <button type="button">a</button>
-          </div>
-        </form>
+        <CommentForm onSubmit={comments.createComment} />
 
-        <div className="table-toolbar">
-          <div>
-            <span>Sort field</span>
-            <div className="segmented">
-              {sortableFields.map((field) => (
-                <button type="button" key={field}>
-                  {field}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <span>Direction</span>
-            <div className="segmented">
-              {sortDirections.map((direction) => (
-                <button type="button" key={direction}>
-                  {direction}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        {comments.error ? <p className="error-text">{comments.error}</p> : null}
 
-        <table>
-          <thead>
-            <tr>
-              <th>User Name</th>
-              <th>E-mail</th>
-              <th>Created</th>
-              <th>Replies</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td colSpan={4}>No comments yet</td>
-            </tr>
-          </tbody>
-        </table>
+        <CommentsTable
+          data={comments.data}
+          sortBy={comments.sortBy}
+          direction={comments.direction}
+          loading={comments.loading}
+          onSortByChange={comments.setSortBy}
+          onDirectionChange={comments.setDirection}
+          onPageChange={comments.setPage}
+        />
       </section>
     </main>
   );

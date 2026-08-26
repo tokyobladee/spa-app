@@ -58,7 +58,9 @@ h1 {
 
 .primary-action,
 .segmented button,
-.toolbar button {
+.toolbar button,
+.form-actions button,
+.pagination button {
   border: 1px solid #9bb7ae;
   border-radius: 8px;
   background: #ffffff;
@@ -78,17 +80,24 @@ h1 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin: 32px 0;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #d6e1dc;
 }
 
-.comment-form label {
+.comment-form label,
+.textarea-field {
   display: grid;
   gap: 8px;
   color: #314943;
   font-weight: 700;
 }
 
-.comment-form label:has(textarea),
-.toolbar {
+.textarea-field,
+.toolbar,
+.form-actions,
+.comment-html,
+.file-preview,
+.error-text {
   grid-column: 1 / -1;
 }
 
@@ -110,9 +119,82 @@ textarea {
 }
 
 .toolbar button,
-.segmented button {
+.segmented button,
+.form-actions button,
+.pagination button {
   min-height: 36px;
   padding: 0 12px;
+}
+
+.segmented button.active {
+  background: #184d47;
+  color: #ffffff;
+}
+
+.captcha {
+  min-height: 64px;
+  overflow: hidden;
+  border: 1px solid #b8c9c3;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.captcha svg {
+  display: block;
+  width: 100%;
+  height: 64px;
+}
+
+.form-actions,
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.form-actions button[type="submit"] {
+  background: #184d47;
+  color: #ffffff;
+}
+
+.error-text {
+  margin: 0;
+  color: #a73232;
+  font-weight: 700;
+}
+
+.comment-html {
+  min-height: 24px;
+  line-height: 1.55;
+}
+
+.comment-html code {
+  border-radius: 6px;
+  padding: 2px 5px;
+  background: #edf2ef;
+}
+
+.file-preview {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #b8c9c3;
+  border-radius: 8px;
+  background: #ffffff;
+  animation: preview-in 160ms ease-out;
+}
+
+.file-preview img {
+  width: min(320px, 100%);
+  max-height: 240px;
+  object-fit: contain;
+}
+
+.file-preview pre {
+  max-height: 240px;
+  overflow: auto;
+  margin: 0;
+  white-space: pre-wrap;
 }
 
 .table-toolbar {
@@ -144,6 +226,28 @@ td {
 
 th {
   background: #e9f0ed;
+}
+
+.pagination {
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@keyframes preview-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 760px) {

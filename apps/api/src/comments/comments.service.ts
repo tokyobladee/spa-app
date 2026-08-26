@@ -101,6 +101,12 @@ export class CommentsService {
     return this.mapper.toItem(await this.comments.save(saved));
   }
 
+  preview(text: string) {
+    return {
+      sanitizedHtml: this.textPolicy.sanitize(text)
+    };
+  }
+
   async getReplyItems(commentId: string) {
     const replies = await this.listReplies(commentId);
 
