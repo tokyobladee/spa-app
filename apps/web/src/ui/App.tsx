@@ -30,6 +30,7 @@ export function App() {
           onSortByChange={comments.setSortBy}
           onDirectionChange={comments.setDirection}
           onPageChange={comments.setPage}
+          onCreateReply={comments.createComment}
         />
       </section>
     </main>

@@ -60,7 +60,8 @@ h1 {
 .segmented button,
 .toolbar button,
 .form-actions button,
-.pagination button {
+.pagination button,
+.row-actions button {
   border: 1px solid #9bb7ae;
   border-radius: 8px;
   background: #ffffff;
@@ -121,7 +122,8 @@ textarea {
 .toolbar button,
 .segmented button,
 .form-actions button,
-.pagination button {
+.pagination button,
+.row-actions button {
   min-height: 36px;
   padding: 0 12px;
 }
@@ -226,6 +228,36 @@ td {
 
 th {
   background: #e9f0ed;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.thread-row td {
+  background: #f8faf9;
+}
+
+.reply-list {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.reply-item {
+  display: grid;
+  gap: 8px;
+  padding-left: 16px;
+  border-left: 3px solid #9bb7ae;
+}
+
+.reply-item div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #47645d;
 }
 
 .pagination {
