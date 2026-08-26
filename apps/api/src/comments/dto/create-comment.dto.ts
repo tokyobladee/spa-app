@@ -14,6 +14,13 @@ export class CreateCommentDto {
   @IsUUID()
   parentId?: string;
 
+  @IsUUID()
+  captchaId: string;
+
+  @Matches(/^[A-Za-z0-9]+$/)
+  @MaxLength(16)
+  captchaValue: string;
+
   @Matches(/^[A-Za-z0-9]+$/)
   @MaxLength(64)
   userName: string;

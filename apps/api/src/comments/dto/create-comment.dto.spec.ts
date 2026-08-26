@@ -8,6 +8,8 @@ describe(CreateCommentDto.name, () => {
       userName: "User123",
       email: "user@example.com",
       homePage: "https://example.com",
+      captchaId: "e2719f10-f251-4abd-8adf-d555562b7550",
+      captchaValue: "A1B2C3",
       text: "Hello"
     });
 

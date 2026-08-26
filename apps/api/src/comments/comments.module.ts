@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { CaptchaModule } from "../captcha/captcha.module";
+import { SecurityModule } from "../security/security.module";
 import { UsersModule } from "../users/users.module";
 import { CommentsController } from "./comments.controller";
 import { CommentsMapper } from "./comments.mapper";
@@ -7,7 +9,7 @@ import { CommentsService } from "./comments.service";
 import { CommentEntity } from "./entities/comment.entity";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CommentEntity]), UsersModule],
+  imports: [TypeOrmModule.forFeature([CommentEntity]), UsersModule, CaptchaModule, SecurityModule],
   controllers: [CommentsController],
   providers: [CommentsService, CommentsMapper],
   exports: [CommentsService]

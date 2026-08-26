@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+import { CaptchaService } from "../captcha/captcha.service";
+import { CommentTextPolicy } from "../security/comment-text.policy";
 import { UsersService } from "../users/users.service";
 import { CommentsMapper } from "./comments.mapper";
 import type { PaginatedCommentsResponse } from "./comment-response";
@@ -22,6 +24,8 @@ export class CommentsService {
     @InjectRepository(CommentEntity)
     private readonly comments: Repository<CommentEntity>,
     private readonly users: UsersService,
+    private readonly captcha: CaptchaService,
+    private readonly textPolicy: CommentTextPolicy,
     private readonly mapper: CommentsMapper
   ) {}
 
@@ -68,7 +72,10 @@ export class CommentsService {
   }
 
   async create(input: CreateCommentDto, metadata: RequestMetadata) {
+    await this.captcha.verify(input.captchaId, input.captchaValue);
+
     const parent = input.parentId ? await this.getCommentOrThrow(input.parentId) : null;
+    const sanitizedHtml = this.textPolicy.sanitize(input.text);
     const author = await this.users.createAuthor({
       userName: input.userName,
       email: input.email,
@@ -82,8 +89,8 @@ export class CommentsService {
       parentId: parent?.id ?? null,
       author,
       userId: author.id,
-      sanitizedHtml: input.text,
-      plainText: input.text,
+      sanitizedHtml,
+      plainText: this.textPolicy.toPlainText(sanitizedHtml),
       depth: parent ? parent.depth + 1 : 0,
       materializedPath: ""
     });

@@ -3,6 +3,8 @@ import type { Repository } from "typeorm";
 import { CommentsMapper } from "./comments.mapper";
 import { CommentsService } from "./comments.service";
 import type { CommentEntity } from "./entities/comment.entity";
+import type { CaptchaService } from "../captcha/captcha.service";
+import { CommentTextPolicy } from "../security/comment-text.policy";
 import type { UserEntity } from "../users/entities/user.entity";
 import type { UsersService } from "../users/users.service";
 
@@ -76,9 +78,12 @@ describe(CommentsService.name, () => {
     const repository = {
       createQueryBuilder: jest.fn(() => builder)
     } as unknown as Repository<CommentEntity>;
+    const captcha = { verify: jest.fn(() => Promise.resolve()) } as unknown as CaptchaService;
     const service = new CommentsService(
       repository,
       { createAuthor: jest.fn() } as unknown as UsersService,
+      captcha,
+      new CommentTextPolicy(),
       new CommentsMapper()
     );
 
@@ -118,16 +123,25 @@ describe(CommentsService.name, () => {
       })
     } as unknown as Repository<CommentEntity>;
     const createAuthor = jest.fn(() => Promise.resolve(author));
+    const verify = jest.fn(() => Promise.resolve());
     const users = {
       createAuthor
     } as unknown as UsersService;
-    const service = new CommentsService(repository, users, new CommentsMapper());
+    const service = new CommentsService(
+      repository,
+      users,
+      { verify } as unknown as CaptchaService,
+      new CommentTextPolicy(),
+      new CommentsMapper()
+    );
 
     const result = await service.create(
       {
         userName: "User123",
         email: "user@example.com",
         homePage: "https://example.com",
+        captchaId: "e2719f10-f251-4abd-8adf-d555562b7550",
+        captchaValue: "A1B2C3",
         text: "Hello"
       },
       {
@@ -143,6 +157,7 @@ describe(CommentsService.name, () => {
       ipAddress: "127.0.0.1",
       userAgent: "test"
     });
+    expect(verify).toHaveBeenCalledWith("e2719f10-f251-4abd-8adf-d555562b7550", "A1B2C3");
     expect(result.id).toBe("a76aa74a-d0f9-431d-9a8a-ea333b764bd2");
     expect(result.parentId).toBeNull();
     expect(result.sanitizedHtml).toBe("Hello");
@@ -152,9 +167,12 @@ describe(CommentsService.name, () => {
     const repository = {
       findOne: jest.fn(() => Promise.resolve(null))
     } as unknown as Repository<CommentEntity>;
+    const captcha = { verify: jest.fn(() => Promise.resolve()) } as unknown as CaptchaService;
     const service = new CommentsService(
       repository,
       { createAuthor: jest.fn() } as unknown as UsersService,
+      captcha,
+      new CommentTextPolicy(),
       new CommentsMapper()
     );
 
