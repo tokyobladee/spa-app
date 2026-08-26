@@ -1,0 +1,165 @@
+import { NotFoundException } from "@nestjs/common";
+import type { Repository } from "typeorm";
+import { CommentsMapper } from "./comments.mapper";
+import { CommentsService } from "./comments.service";
+import type { CommentEntity } from "./entities/comment.entity";
+import type { UserEntity } from "../users/entities/user.entity";
+import type { UsersService } from "../users/users.service";
+
+interface QueryBuilderMock {
+  leftJoinAndSelect: jest.MockedFunction<(relation: string, alias: string) => QueryBuilderMock>;
+  loadRelationCountAndMap: jest.MockedFunction<(property: string, relation: string) => QueryBuilderMock>;
+  where: jest.MockedFunction<(condition: string, parameters?: Record<string, string>) => QueryBuilderMock>;
+  andWhere: jest.MockedFunction<(condition: string, parameters: Record<string, string>) => QueryBuilderMock>;
+  orderBy: jest.MockedFunction<(field: string, direction: "ASC" | "DESC") => QueryBuilderMock>;
+  addOrderBy: jest.MockedFunction<(field: string, direction: "ASC" | "DESC") => QueryBuilderMock>;
+  skip: jest.MockedFunction<(count: number) => QueryBuilderMock>;
+  take: jest.MockedFunction<(count: number) => QueryBuilderMock>;
+  getManyAndCount: jest.MockedFunction<() => Promise<[CommentEntity[], number]>>;
+  getMany: jest.MockedFunction<() => Promise<CommentEntity[]>>;
+}
+
+function createQueryBuilderMock(comments: CommentEntity[], total: number): QueryBuilderMock {
+  const builder = {} as QueryBuilderMock;
+  builder.leftJoinAndSelect = jest.fn((_relation: string, _alias: string) => builder);
+  builder.loadRelationCountAndMap = jest.fn((_property: string, _relation: string) => builder);
+  builder.where = jest.fn((_condition: string, _parameters?: Record<string, string>) => builder);
+  builder.andWhere = jest.fn((_condition: string, _parameters: Record<string, string>) => builder);
+  builder.orderBy = jest.fn((_field: string, _direction: "ASC" | "DESC") => builder);
+  builder.addOrderBy = jest.fn((_field: string, _direction: "ASC" | "DESC") => builder);
+  builder.skip = jest.fn((_count: number) => builder);
+  builder.take = jest.fn((_count: number) => builder);
+  builder.getManyAndCount = jest.fn((): Promise<[CommentEntity[], number]> => Promise.resolve([comments, total]));
+  builder.getMany = jest.fn(() => Promise.resolve(comments));
+
+  return builder;
+}
+
+function buildAuthor(): UserEntity {
+  return {
+    id: "8d6cc08d-7110-4fc1-8f43-f38a8106dfd0",
+    userName: "User123",
+    email: "user@example.com",
+    homePage: "https://example.com",
+    ipAddress: "127.0.0.1",
+    userAgent: "test",
+    comments: [],
+    createdAt: new Date("2026-08-31T08:00:00.000Z"),
+    updatedAt: new Date("2026-08-31T08:00:00.000Z")
+  };
+}
+
+function buildComment(author = buildAuthor()): CommentEntity {
+  return {
+    id: "a76aa74a-d0f9-431d-9a8a-ea333b764bd2",
+    parentId: null,
+    parent: null,
+    children: [],
+    userId: author.id,
+    author,
+    sanitizedHtml: "Hello",
+    plainText: "Hello",
+    depth: 0,
+    materializedPath: "a76aa74a-d0f9-431d-9a8a-ea333b764bd2",
+    status: "published",
+    attachments: [],
+    repliesCount: 0,
+    createdAt: new Date("2026-08-31T08:00:00.000Z"),
+    updatedAt: new Date("2026-08-31T08:00:00.000Z")
+  };
+}
+
+describe(CommentsService.name, () => {
+  it("lists top-level comments with allowlisted sorting and pagination", async () => {
+    const comment = buildComment();
+    const builder = createQueryBuilderMock([comment], 1);
+    const repository = {
+      createQueryBuilder: jest.fn(() => builder)
+    } as unknown as Repository<CommentEntity>;
+    const service = new CommentsService(
+      repository,
+      { createAuthor: jest.fn() } as unknown as UsersService,
+      new CommentsMapper()
+    );
+
+    const result = await service.listTopLevel({
+      page: 2,
+      pageSize: 25,
+      sortBy: "userName",
+      direction: "asc"
+    });
+
+    expect(builder.where).toHaveBeenCalledWith("comment.parent_id IS NULL");
+    expect(builder.andWhere).toHaveBeenCalledWith("comment.status = :status", {
+      status: "published"
+    });
+    expect(builder.orderBy).toHaveBeenCalledWith("author.user_name", "ASC");
+    expect(builder.skip).toHaveBeenCalledWith(25);
+    expect(builder.take).toHaveBeenCalledWith(25);
+    expect(result.total).toBe(1);
+    expect(result.items[0]?.author.userName).toBe("User123");
+  });
+
+  it("creates a top-level comment with author metadata and materialized path", async () => {
+    const author = buildAuthor();
+    const repository = {
+      create: jest.fn((value: Partial<CommentEntity>) => value as CommentEntity),
+      save: jest.fn((value: CommentEntity) => {
+        const id = value.id ?? "a76aa74a-d0f9-431d-9a8a-ea333b764bd2";
+        return Promise.resolve({
+          ...value,
+          id,
+          createdAt: value.createdAt ?? new Date("2026-08-31T08:00:00.000Z"),
+          updatedAt: value.updatedAt ?? new Date("2026-08-31T08:00:00.000Z"),
+          attachments: value.attachments ?? [],
+          children: value.children ?? [],
+          repliesCount: value.repliesCount ?? 0
+        });
+      })
+    } as unknown as Repository<CommentEntity>;
+    const createAuthor = jest.fn(() => Promise.resolve(author));
+    const users = {
+      createAuthor
+    } as unknown as UsersService;
+    const service = new CommentsService(repository, users, new CommentsMapper());
+
+    const result = await service.create(
+      {
+        userName: "User123",
+        email: "user@example.com",
+        homePage: "https://example.com",
+        text: "Hello"
+      },
+      {
+        ipAddress: "127.0.0.1",
+        userAgent: "test"
+      }
+    );
+
+    expect(createAuthor).toHaveBeenCalledWith({
+      userName: "User123",
+      email: "user@example.com",
+      homePage: "https://example.com",
+      ipAddress: "127.0.0.1",
+      userAgent: "test"
+    });
+    expect(result.id).toBe("a76aa74a-d0f9-431d-9a8a-ea333b764bd2");
+    expect(result.parentId).toBeNull();
+    expect(result.sanitizedHtml).toBe("Hello");
+  });
+
+  it("rejects replies for missing parent comments", async () => {
+    const repository = {
+      findOne: jest.fn(() => Promise.resolve(null))
+    } as unknown as Repository<CommentEntity>;
+    const service = new CommentsService(
+      repository,
+      { createAuthor: jest.fn() } as unknown as UsersService,
+      new CommentsMapper()
+    );
+
+    await expect(service.listReplies("a76aa74a-d0f9-431d-9a8a-ea333b764bd2")).rejects.toBeInstanceOf(
+      NotFoundException
+    );
+  });
+});
