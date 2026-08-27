@@ -1,11 +1,14 @@
 import { NotFoundException } from "@nestjs/common";
 import type { EventEmitter2 } from "@nestjs/event-emitter";
+import type { Queue } from "bullmq";
 import type { Repository } from "typeorm";
+import type { RedisCacheService } from "../cache/redis-cache.service";
 import { CommentsMapper } from "./comments.mapper";
 import { CommentsService } from "./comments.service";
 import type { CommentEntity } from "./entities/comment.entity";
 import type { CaptchaService } from "../captcha/captcha.service";
 import type { FilesService } from "../files/files.service";
+import type { SearchIndexJob } from "../queue/search-index-queue.processor";
 import { CommentTextPolicy } from "../security/comment-text.policy";
 import type { UserEntity } from "../users/entities/user.entity";
 import type { UsersService } from "../users/users.service";
@@ -73,6 +76,28 @@ function buildComment(author = buildAuthor()): CommentEntity {
   };
 }
 
+function buildCache() {
+  const get = jest.fn(() => Promise.resolve(null));
+  const set = jest.fn(() => Promise.resolve());
+  const delByPattern = jest.fn(() => Promise.resolve());
+
+  return {
+    cache: { get, set, delByPattern } as unknown as RedisCacheService,
+    get,
+    set,
+    delByPattern
+  };
+}
+
+function buildSearchQueue() {
+  const add = jest.fn(() => Promise.resolve());
+
+  return {
+    searchQueue: { add } as unknown as Queue<SearchIndexJob>,
+    add
+  };
+}
+
 describe(CommentsService.name, () => {
   it("lists top-level comments with allowlisted sorting and pagination", async () => {
     const comment = buildComment();
@@ -83,6 +108,8 @@ describe(CommentsService.name, () => {
     const captcha = { verify: jest.fn(() => Promise.resolve()) } as unknown as CaptchaService;
     const files = { attachToComment: jest.fn(() => Promise.resolve([])) } as unknown as FilesService;
     const events = { emit: jest.fn() } as unknown as EventEmitter2;
+    const { cache, set } = buildCache();
+    const { searchQueue } = buildSearchQueue();
     const service = new CommentsService(
       repository,
       { createAuthor: jest.fn() } as unknown as UsersService,
@@ -90,7 +117,9 @@ describe(CommentsService.name, () => {
       new CommentTextPolicy(),
       files,
       events,
-      new CommentsMapper()
+      new CommentsMapper(),
+      cache,
+      searchQueue
     );
 
     const result = await service.listTopLevel({
@@ -107,6 +136,7 @@ describe(CommentsService.name, () => {
     expect(builder.orderBy).toHaveBeenCalledWith("author.userName", "ASC");
     expect(builder.skip).toHaveBeenCalledWith(25);
     expect(builder.take).toHaveBeenCalledWith(25);
+    expect(set).toHaveBeenCalledWith("comments:list:2:25:userName:asc", result, 30);
     expect(result.total).toBe(1);
     expect(result.items[0]?.author.userName).toBe("User123");
   });
@@ -132,6 +162,8 @@ describe(CommentsService.name, () => {
     const verify = jest.fn(() => Promise.resolve());
     const attachToComment = jest.fn(() => Promise.resolve([]));
     const emit = jest.fn();
+    const { cache, delByPattern } = buildCache();
+    const { searchQueue, add } = buildSearchQueue();
     const users = {
       createAuthor
     } as unknown as UsersService;
@@ -142,7 +174,9 @@ describe(CommentsService.name, () => {
       new CommentTextPolicy(),
       { attachToComment } as unknown as FilesService,
       { emit } as unknown as EventEmitter2,
-      new CommentsMapper()
+      new CommentsMapper(),
+      cache,
+      searchQueue
     );
 
     const result = await service.create(
@@ -169,6 +203,8 @@ describe(CommentsService.name, () => {
     });
     expect(verify).toHaveBeenCalledWith("e2719f10-f251-4abd-8adf-d555562b7550", "A1B2C3");
     expect(attachToComment).toHaveBeenCalledWith(expect.objectContaining({ id: result.id }), undefined);
+    expect(delByPattern).toHaveBeenCalledWith("comments:list:*");
+    expect(add).toHaveBeenCalledWith("index-comment", { comment: result });
     expect(emit).toHaveBeenCalledWith("comments.created", result);
     expect(result.id).toBe("a76aa74a-d0f9-431d-9a8a-ea333b764bd2");
     expect(result.parentId).toBeNull();
@@ -182,6 +218,8 @@ describe(CommentsService.name, () => {
     const captcha = { verify: jest.fn(() => Promise.resolve()) } as unknown as CaptchaService;
     const files = { attachToComment: jest.fn(() => Promise.resolve([])) } as unknown as FilesService;
     const events = { emit: jest.fn() } as unknown as EventEmitter2;
+    const { cache } = buildCache();
+    const { searchQueue } = buildSearchQueue();
     const service = new CommentsService(
       repository,
       { createAuthor: jest.fn() } as unknown as UsersService,
@@ -189,7 +227,9 @@ describe(CommentsService.name, () => {
       new CommentTextPolicy(),
       files,
       events,
-      new CommentsMapper()
+      new CommentsMapper(),
+      cache,
+      searchQueue
     );
 
     await expect(service.listReplies("a76aa74a-d0f9-431d-9a8a-ea333b764bd2")).rejects.toBeInstanceOf(

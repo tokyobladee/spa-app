@@ -2,12 +2,14 @@ import { createHash, randomUUID } from "node:crypto";
 import mysql from "mysql2/promise";
 
 const apiBaseUrl = process.env.E2E_API_BASE_URL ?? "http://localhost:3000/api";
+const elasticsearchUrl = process.env.E2E_ELASTICSEARCH_URL ?? "http://localhost:9200";
 const captchaValue = "A2B3C4";
 const emailSuffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const createdCommentIds = [];
 const createdEmails = [];
 const createdAuthEmails = [];
 const createdCaptchaIds = [];
+const createdSearchIds = [];
 
 const database = await mysql.createConnection({
   host: process.env.DATABASE_HOST ?? "localhost",
@@ -75,6 +77,9 @@ try {
   assertEqual(topComment.author.userName, "Alice123", "Created comment should expose the author");
   assertEqual(topComment.attachments.length, 1, "Created comment should include the text attachment");
   assertEqual(topComment.attachments[0].originalName, "note.txt", "Attachment metadata should keep original name");
+  createdSearchIds.push(topComment.id);
+  const indexedTopComment = await waitForSearchDocument(topComment.id);
+  assertEqual(indexedTopComment._source.authorName, "Alice123", "Search document should include the author name");
 
   const attachmentResponse = await fetch(`${apiBaseUrl}${topComment.attachments[0].url.replace("/api", "")}`);
   assertEqual(attachmentResponse.status, 200, "Attachment download should return 200");
@@ -205,10 +210,36 @@ async function cleanup() {
   if (createdCaptchaIds.length > 0) {
     await database.query("DELETE FROM captcha_challenges WHERE id IN (?)", [createdCaptchaIds]);
   }
+
+  await Promise.all(
+    createdSearchIds.map((id) =>
+      fetch(`${elasticsearchUrl}/comments/_doc/${id}`, {
+        method: "DELETE"
+      }).catch(() => undefined)
+    )
+  );
 }
 
 function hashCaptcha(value) {
   return createHash("sha256").update(value.toLowerCase().trim()).digest("hex");
+}
+
+async function waitForSearchDocument(commentId) {
+  const deadline = Date.now() + 10000;
+  let lastStatus = 0;
+
+  while (Date.now() < deadline) {
+    const response = await fetch(`${elasticsearchUrl}/comments/_doc/${commentId}`);
+    lastStatus = response.status;
+
+    if (response.status === 200) {
+      return response.json();
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  throw new Error(`Search document ${commentId} was not indexed in time. Last status: ${lastStatus}`);
 }
 
 function assert(condition, message) {

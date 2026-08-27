@@ -1,23 +1,31 @@
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import type { Job } from "bullmq";
+import type { CommentResponse } from "../comments/comment-response";
+import { SearchService } from "../search/search.service";
 
 @Processor("search-index")
 export class SearchIndexQueueProcessor extends WorkerHost {
-  process(job: Job<SearchIndexJob>): Promise<SearchIndexJobResult> {
-    return Promise.resolve({
+  constructor(private readonly search: SearchService) {
+    super();
+  }
+
+  async process(job: Job<SearchIndexJob>): Promise<SearchIndexJobResult> {
+    await this.search.indexComment(job.data.comment);
+
+    return {
       jobId: String(job.id),
-      commentId: job.data.commentId,
-      status: "accepted"
-    });
+      commentId: job.data.comment.id,
+      status: "indexed"
+    };
   }
 }
 
 export interface SearchIndexJob {
-  commentId: string;
+  comment: CommentResponse;
 }
 
 export interface SearchIndexJobResult {
   jobId: string;
   commentId: string;
-  status: "accepted";
+  status: "indexed";
 }

@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { InjectRepository } from "@nestjs/typeorm";
+import type { Queue } from "bullmq";
 import { Repository } from "typeorm";
+import { RedisCacheService } from "../cache/redis-cache.service";
 import { CaptchaService } from "../captcha/captcha.service";
 import { FilesService } from "../files/files.service";
+import type { SearchIndexJob } from "../queue/search-index-queue.processor";
 import { CommentTextPolicy } from "../security/comment-text.policy";
 import { UsersService } from "../users/users.service";
 import { CommentsMapper } from "./comments.mapper";
@@ -30,10 +34,20 @@ export class CommentsService {
     private readonly textPolicy: CommentTextPolicy,
     private readonly files: FilesService,
     private readonly events: EventEmitter2,
-    private readonly mapper: CommentsMapper
+    private readonly mapper: CommentsMapper,
+    private readonly cache: RedisCacheService,
+    @InjectQueue("search-index")
+    private readonly searchQueue: Queue<SearchIndexJob>
   ) {}
 
   async listTopLevel(query: ListCommentsQueryDto): Promise<PaginatedCommentsResponse> {
+    const cacheKey = this.listCacheKey(query);
+    const cached = await this.readCachedList(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
     const page = query.page;
     const pageSize = query.pageSize;
     const sortExpression = sortExpressions[query.sortBy];
@@ -52,12 +66,16 @@ export class CommentsService {
       .take(pageSize)
       .getManyAndCount();
 
-    return {
+    const response = {
       items: comments.map((comment) => this.mapper.toItem(comment)),
       page,
       pageSize,
       total
     };
+
+    await this.writeCachedList(cacheKey, response);
+
+    return response;
   }
 
   async listReplies(commentId: string): Promise<CommentEntity[]> {
@@ -105,6 +123,8 @@ export class CommentsService {
     persisted.attachments = await this.files.attachToComment(persisted, file);
 
     const response = this.mapper.toItem(persisted);
+    await this.invalidateCommentListCache();
+    void this.enqueueSearchIndex(response);
     this.events.emit("comments.created", response);
 
     return response;
@@ -133,6 +153,42 @@ export class CommentsService {
     }
 
     return comment;
+  }
+
+  private listCacheKey(query: ListCommentsQueryDto): string {
+    return `comments:list:${query.page}:${query.pageSize}:${query.sortBy}:${query.direction}`;
+  }
+
+  private async readCachedList(cacheKey: string): Promise<PaginatedCommentsResponse | null> {
+    try {
+      return await this.cache.get<PaginatedCommentsResponse>(cacheKey);
+    } catch {
+      return null;
+    }
+  }
+
+  private async writeCachedList(cacheKey: string, response: PaginatedCommentsResponse): Promise<void> {
+    try {
+      await this.cache.set(cacheKey, response, 30);
+    } catch {
+      return;
+    }
+  }
+
+  private async invalidateCommentListCache(): Promise<void> {
+    try {
+      await this.cache.delByPattern("comments:list:*");
+    } catch {
+      return;
+    }
+  }
+
+  private async enqueueSearchIndex(comment: ReturnType<CommentsMapper["toItem"]>): Promise<void> {
+    try {
+      await this.searchQueue.add("index-comment", { comment });
+    } catch {
+      return;
+    }
   }
 }
 
