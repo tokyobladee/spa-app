@@ -31,4 +31,20 @@ describe(CreateCommentDto.name, () => {
 
     expect(invalidProperties).toEqual(expect.arrayContaining(["userName", "email", "homePage", "text"]));
   });
+
+  it("rejects SQL-shaped identity and URL payloads before persistence", async () => {
+    const dto = plainToInstance(CreateCommentDto, {
+      userName: "User123';DROP",
+      email: "user@example.com' OR '1'='1",
+      homePage: "https://example.com');DROP TABLE users;--",
+      captchaId: "e2719f10-f251-4abd-8adf-d555562b7550",
+      captchaValue: "A1B2C3",
+      text: "Hello"
+    });
+
+    const errors = await validate(dto);
+    const invalidProperties = errors.map((error) => error.property);
+
+    expect(invalidProperties).toEqual(expect.arrayContaining(["userName", "email", "homePage"]));
+  });
 });

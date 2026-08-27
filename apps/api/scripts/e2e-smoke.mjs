@@ -109,6 +109,22 @@ try {
   assert(page.items.some((item) => item.id === topComment.id), "Top-level listing should include the created comment");
   assert(!page.items.some((item) => item.id === reply.id), "Top-level listing should not include replies");
 
+  await expectJson("/comments?page=1&pageSize=25&sortBy=createdAt;DROP%20TABLE%20comments&direction=desc", {
+    status: 400
+  });
+
+  const injectionCaptchaId = await seedCaptcha(captchaValue);
+  await postComment(
+    {
+      captchaId: injectionCaptchaId,
+      captchaValue,
+      userName: "User123';DROP",
+      email: `injection-${emailSuffix}@example.com`,
+      text: "Hello"
+    },
+    400
+  );
+
   console.log("E2E smoke passed");
 } finally {
   await cleanup();
@@ -129,7 +145,7 @@ async function seedCaptcha(value) {
   return id;
 }
 
-async function postComment(input) {
+async function postComment(input, expectedStatus = 201) {
   const form = new FormData();
   const { attachment, attachmentName, ...fields } = input;
 
@@ -145,7 +161,7 @@ async function postComment(input) {
 
   return expectJson("/comments", {
     method: "POST",
-    status: 201,
+    status: expectedStatus,
     body: form
   });
 }
