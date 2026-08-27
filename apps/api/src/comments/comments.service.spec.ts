@@ -104,7 +104,7 @@ describe(CommentsService.name, () => {
     expect(builder.andWhere).toHaveBeenCalledWith("comment.status = :status", {
       status: "published"
     });
-    expect(builder.orderBy).toHaveBeenCalledWith("author.user_name", "ASC");
+    expect(builder.orderBy).toHaveBeenCalledWith("author.userName", "ASC");
     expect(builder.skip).toHaveBeenCalledWith(25);
     expect(builder.take).toHaveBeenCalledWith(25);
     expect(result.total).toBe(1);

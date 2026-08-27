@@ -12,12 +12,12 @@ import { CreateCommentDto } from "./dto/create-comment.dto";
 import { ListCommentsQueryDto } from "./dto/list-comments-query.dto";
 import { CommentEntity } from "./entities/comment.entity";
 
-type SortExpression = "comment.created_at" | "author.email" | "author.user_name";
+type SortExpression = "comment.createdAt" | "author.email" | "author.userName";
 
 const sortExpressions: Record<ListCommentsQueryDto["sortBy"], SortExpression> = {
-  createdAt: "comment.created_at",
+  createdAt: "comment.createdAt",
   email: "author.email",
-  userName: "author.user_name"
+  userName: "author.userName"
 };
 
 @Injectable()
@@ -70,7 +70,7 @@ export class CommentsService {
       .loadRelationCountAndMap("comment.repliesCount", "comment.children")
       .where("comment.parent_id = :commentId", { commentId })
       .andWhere("comment.status = :status", { status: "published" })
-      .orderBy("comment.created_at", "ASC")
+      .orderBy("comment.createdAt", "ASC")
       .addOrderBy("comment.id", "ASC")
       .getMany();
   }

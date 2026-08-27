@@ -22,13 +22,13 @@ export class UserEntity {
   @Column({ length: 254 })
   email: string;
 
-  @Column({ name: "home_page", length: 2048, nullable: true })
+  @Column({ name: "home_page", type: "varchar", length: 2048, nullable: true })
   homePage: string | null;
 
-  @Column({ name: "ip_address", length: 45, nullable: true })
+  @Column({ name: "ip_address", type: "varchar", length: 45, nullable: true })
   ipAddress: string | null;
 
-  @Column({ name: "user_agent", length: 512, nullable: true })
+  @Column({ name: "user_agent", type: "varchar", length: 512, nullable: true })
   userAgent: string | null;
 
   @OneToMany(() => CommentEntity, (comment) => comment.author)

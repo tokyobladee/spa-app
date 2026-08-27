@@ -37,10 +37,10 @@ export class AttachmentEntity {
   @Column({ name: "size_bytes" })
   sizeBytes: number;
 
-  @Column({ nullable: true })
+  @Column({ type: "int", nullable: true })
   width: number | null;
 
-  @Column({ nullable: true })
+  @Column({ type: "int", nullable: true })
   height: number | null;
 
   @CreateDateColumn({ name: "created_at", type: "datetime", precision: 6 })

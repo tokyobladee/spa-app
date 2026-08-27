@@ -8,7 +8,7 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY . .
-RUN pnpm --filter @comments/api build
+RUN pnpm --filter @comments/shared build && pnpm --filter @comments/api build
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
