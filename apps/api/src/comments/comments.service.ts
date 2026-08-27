@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { CaptchaService } from "../captcha/captcha.service";
@@ -28,6 +29,7 @@ export class CommentsService {
     private readonly captcha: CaptchaService,
     private readonly textPolicy: CommentTextPolicy,
     private readonly files: FilesService,
+    private readonly events: EventEmitter2,
     private readonly mapper: CommentsMapper
   ) {}
 
@@ -102,7 +104,10 @@ export class CommentsService {
     const persisted = await this.comments.save(saved);
     persisted.attachments = await this.files.attachToComment(persisted, file);
 
-    return this.mapper.toItem(persisted);
+    const response = this.mapper.toItem(persisted);
+    this.events.emit("comments.created", response);
+
+    return response;
   }
 
   preview(text: string) {

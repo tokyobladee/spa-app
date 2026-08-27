@@ -1,4 +1,5 @@
 import { NotFoundException } from "@nestjs/common";
+import type { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Repository } from "typeorm";
 import { CommentsMapper } from "./comments.mapper";
 import { CommentsService } from "./comments.service";
@@ -81,12 +82,14 @@ describe(CommentsService.name, () => {
     } as unknown as Repository<CommentEntity>;
     const captcha = { verify: jest.fn(() => Promise.resolve()) } as unknown as CaptchaService;
     const files = { attachToComment: jest.fn(() => Promise.resolve([])) } as unknown as FilesService;
+    const events = { emit: jest.fn() } as unknown as EventEmitter2;
     const service = new CommentsService(
       repository,
       { createAuthor: jest.fn() } as unknown as UsersService,
       captcha,
       new CommentTextPolicy(),
       files,
+      events,
       new CommentsMapper()
     );
 
@@ -128,6 +131,7 @@ describe(CommentsService.name, () => {
     const createAuthor = jest.fn(() => Promise.resolve(author));
     const verify = jest.fn(() => Promise.resolve());
     const attachToComment = jest.fn(() => Promise.resolve([]));
+    const emit = jest.fn();
     const users = {
       createAuthor
     } as unknown as UsersService;
@@ -137,6 +141,7 @@ describe(CommentsService.name, () => {
       { verify } as unknown as CaptchaService,
       new CommentTextPolicy(),
       { attachToComment } as unknown as FilesService,
+      { emit } as unknown as EventEmitter2,
       new CommentsMapper()
     );
 
@@ -164,6 +169,7 @@ describe(CommentsService.name, () => {
     });
     expect(verify).toHaveBeenCalledWith("e2719f10-f251-4abd-8adf-d555562b7550", "A1B2C3");
     expect(attachToComment).toHaveBeenCalledWith(expect.objectContaining({ id: result.id }), undefined);
+    expect(emit).toHaveBeenCalledWith("comments.created", result);
     expect(result.id).toBe("a76aa74a-d0f9-431d-9a8a-ea333b764bd2");
     expect(result.parentId).toBeNull();
     expect(result.sanitizedHtml).toBe("Hello");
@@ -175,12 +181,14 @@ describe(CommentsService.name, () => {
     } as unknown as Repository<CommentEntity>;
     const captcha = { verify: jest.fn(() => Promise.resolve()) } as unknown as CaptchaService;
     const files = { attachToComment: jest.fn(() => Promise.resolve([])) } as unknown as FilesService;
+    const events = { emit: jest.fn() } as unknown as EventEmitter2;
     const service = new CommentsService(
       repository,
       { createAuthor: jest.fn() } as unknown as UsersService,
       captcha,
       new CommentTextPolicy(),
       files,
+      events,
       new CommentsMapper()
     );
 

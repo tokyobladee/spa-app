@@ -1,7 +1,9 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
+import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { CacheModule } from "./cache/cache.module";
 import { CaptchaModule } from "./captcha/captcha.module";
 import { CommentsModule } from "./comments/comments.module";
 import { HealthController } from "./health/health.controller";
@@ -28,6 +30,8 @@ import { UsersModule } from "./users/users.module";
         limit: 120
       }
     ]),
+    EventEmitterModule.forRoot(),
+    CacheModule,
     DatabaseModule,
     UsersModule,
     CommentsModule,
