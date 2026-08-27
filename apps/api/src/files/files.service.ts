@@ -1,10 +1,12 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import { extname, join } from "node:path";
+import { createReadStream } from "node:fs";
+import { access, mkdir, writeFile } from "node:fs/promises";
+import { extname, join, normalize } from "node:path";
 import sharp from "sharp";
+import type { ReadStream } from "node:fs";
 import { Repository } from "typeorm";
 import { CommentEntity } from "../comments/entities/comment.entity";
 import { AttachmentEntity } from "./entities/attachment.entity";
@@ -44,6 +46,27 @@ export class FilesService {
     });
 
     return [await this.attachments.save(attachment)];
+  }
+
+  async getDownload(storageKey: string): Promise<FileDownload> {
+    const attachment = await this.attachments.findOne({ where: { storageKey } });
+
+    if (!attachment) {
+      throw new NotFoundException("File was not found");
+    }
+
+    const filePath = this.resolveStoragePath(attachment.storageKey);
+
+    try {
+      await access(filePath);
+    } catch {
+      throw new NotFoundException("File was not found");
+    }
+
+    return {
+      stream: createReadStream(filePath),
+      attachment
+    };
   }
 
   private async process(file: Express.Multer.File): Promise<ProcessedFile> {
@@ -93,6 +116,16 @@ export class FilesService {
 
     return extension || ".png";
   }
+
+  private resolveStoragePath(storageKey: string): string {
+    const normalized = normalize(storageKey);
+
+    if (normalized.includes("..") || normalized.includes("/") || normalized.includes("\\")) {
+      throw new NotFoundException("File was not found");
+    }
+
+    return join(this.config.getOrThrow<string>("app.uploadRoot"), normalized);
+  }
 }
 
 interface ProcessedFile {
@@ -102,4 +135,9 @@ interface ProcessedFile {
   sizeBytes: number;
   width: number | null;
   height: number | null;
+}
+
+export interface FileDownload {
+  stream: ReadStream;
+  attachment: AttachmentEntity;
 }

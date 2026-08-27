@@ -11,6 +11,7 @@
     "migration:run:prod": "typeorm -d dist/database/typeorm.config.js migration:run",
     "migration:revert": "typeorm-ts-node-commonjs -d src/database/typeorm.config.ts migration:revert",
     "test": "jest",
+    "test:e2e": "node scripts/e2e-smoke.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -53,6 +54,7 @@
     "@nestjs/cli": "^11.0.10",
     "@nestjs/testing": "^11.1.6",
     "@types/amqplib": "^0.10.8",
+    "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.2.0",
     "@types/sanitize-html": "^2.16.1",
