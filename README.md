@@ -68,6 +68,16 @@ pnpm test
 pnpm build
 ```
 
+Run the load-test scenario:
+
+```bash
+API_BASE_URL=http://localhost:3000 pnpm load:test
+```
+
 ## Database Schema
 
 The MySQL schema export is stored in `database/schema.sql`.
+
+## Deployment
+
+Deployment notes are stored in `docs/deployment.md`.
