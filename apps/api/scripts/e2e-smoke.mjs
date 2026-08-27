@@ -6,6 +6,7 @@ const captchaValue = "A2B3C4";
 const emailSuffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const createdCommentIds = [];
 const createdEmails = [];
+const createdAuthEmails = [];
 const createdCaptchaIds = [];
 
 const database = await mysql.createConnection({
@@ -18,6 +19,33 @@ const database = await mysql.createConnection({
 
 try {
   await expectJson("/health", { status: 200 });
+  await expectJson("/auth/me", { status: 401 });
+
+  const adminEmail = `admin-${emailSuffix}@example.com`;
+  const adminPassword = "securePassword12";
+  const bootstrap = await postJson("/auth/bootstrap-admin", {
+    email: adminEmail,
+    password: adminPassword,
+    bootstrapToken: process.env.ADMIN_BOOTSTRAP_TOKEN ?? "local-bootstrap-token"
+  });
+  createdAuthEmails.push(adminEmail);
+
+  assert(bootstrap.accessToken, "Bootstrap should return an access token");
+  assertEqual(bootstrap.user.email, adminEmail, "Bootstrap should return the created admin");
+
+  const login = await postJson("/auth/login", {
+    email: adminEmail,
+    password: adminPassword
+  });
+  assert(login.accessToken, "Login should return an access token");
+
+  const me = await expectJson("/auth/me", {
+    status: 200,
+    headers: {
+      Authorization: `Bearer ${login.accessToken}`
+    }
+  });
+  assertEqual(me.email, adminEmail, "Protected profile endpoint should read the JWT identity");
 
   const preview = await postJson("/comments/preview", {
     text: "<strong>Hello</strong> <i>world</i>"
@@ -138,13 +166,15 @@ async function expectJson(path, options = {}) {
 function requestOptions(options) {
   if (!options.body) {
     return {
-      method: options.method ?? "GET"
+      method: options.method ?? "GET",
+      headers: options.headers
     };
   }
 
   if (options.body instanceof FormData) {
     return {
       method: options.method ?? "POST",
+      headers: options.headers,
       body: options.body
     };
   }
@@ -152,7 +182,8 @@ function requestOptions(options) {
   return {
     method: options.method ?? "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      ...options.headers
     },
     body: JSON.stringify(options.body)
   };
@@ -165,6 +196,10 @@ async function cleanup() {
 
   if (createdEmails.length > 0) {
     await database.query("DELETE FROM users WHERE email IN (?)", [createdEmails]);
+  }
+
+  if (createdAuthEmails.length > 0) {
+    await database.query("DELETE FROM auth_users WHERE email IN (?)", [createdAuthEmails]);
   }
 
   if (createdCaptchaIds.length > 0) {

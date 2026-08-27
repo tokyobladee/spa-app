@@ -14,4 +14,8 @@ export class AuthTokenService {
   issue(payload: AuthTokenPayload): Promise<string> {
     return this.jwt.signAsync(payload);
   }
+
+  verify(token: string): Promise<AuthTokenPayload> {
+    return this.jwt.verifyAsync<AuthTokenPayload>(token);
+  }
 }

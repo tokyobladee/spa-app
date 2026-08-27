@@ -14,6 +14,7 @@ export interface EnvironmentVariables {
   RABBITMQ_URL?: string;
   ELASTICSEARCH_NODE?: string;
   JWT_SECRET?: string;
+  ADMIN_BOOTSTRAP_TOKEN?: string;
   UPLOAD_ROOT?: string;
 }
 
@@ -35,6 +36,7 @@ export interface AppConfig {
   rabbitmqUrl: string;
   elasticsearchNode: string;
   jwtSecret: string;
+  adminBootstrapToken: string;
   uploadRoot: string;
 }
 
@@ -59,6 +61,7 @@ export const appConfig = registerAs("app", (): AppConfig => {
     rabbitmqUrl: env.RABBITMQ_URL ?? "amqp://comments:comments@localhost:5672",
     elasticsearchNode: env.ELASTICSEARCH_NODE ?? "http://localhost:9200",
     jwtSecret: env.JWT_SECRET ?? "change-me-in-local-env",
+    adminBootstrapToken: env.ADMIN_BOOTSTRAP_TOKEN ?? "local-bootstrap-token",
     uploadRoot: env.UPLOAD_ROOT ?? "storage/uploads"
   };
 });
@@ -78,6 +81,10 @@ export function validateEnvironment(env: EnvironmentVariables) {
 
   if (env.JWT_SECRET === "change-me-in-local-env" && env.NODE_ENV === "production") {
     throw new Error("JWT_SECRET must be changed in production");
+  }
+
+  if (env.ADMIN_BOOTSTRAP_TOKEN === "local-bootstrap-token" && env.NODE_ENV === "production") {
+    throw new Error("ADMIN_BOOTSTRAP_TOKEN must be changed in production");
   }
 
   return env;
