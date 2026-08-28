@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { CommentsApi, type CaptchaChallenge, type CreateCommentPayload } from "../../api/commentsApi";
 import { createFilePreview, type FilePreview, validateAttachment } from "../../domain/files";
+import { validateCommentMarkup } from "../../domain/markup";
 import { CommentHtml } from "./CommentHtml";
 
 interface CommentFormProps {
@@ -116,6 +117,12 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
       return;
     }
 
+    const markupError = validateCommentMarkup(form.text);
+    if (markupError) {
+      setError(markupError);
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
@@ -156,6 +163,13 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
 
   async function preview() {
     setError(null);
+
+    const markupError = validateCommentMarkup(form.text);
+    if (markupError) {
+      setError(markupError);
+      setPreviewHtml("");
+      return;
+    }
 
     try {
       const result = await api.previewComment(form.text);
