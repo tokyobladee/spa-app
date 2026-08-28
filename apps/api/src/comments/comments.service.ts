@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
+import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { InjectRepository } from "@nestjs/typeorm";
 import type { Queue } from "bullmq";
@@ -36,6 +37,7 @@ export class CommentsService {
     private readonly events: EventEmitter2,
     private readonly mapper: CommentsMapper,
     private readonly cache: RedisCacheService,
+    private readonly config: ConfigService,
     @InjectQueue("search-index")
     private readonly searchQueue: Queue<SearchIndexJob>
   ) {}
@@ -169,7 +171,7 @@ export class CommentsService {
 
   private async writeCachedList(cacheKey: string, response: PaginatedCommentsResponse): Promise<void> {
     try {
-      await this.cache.set(cacheKey, response, 30);
+      await this.cache.set(cacheKey, response, this.config.getOrThrow<number>("app.commentListCacheTtlSeconds"));
     } catch {
       return;
     }

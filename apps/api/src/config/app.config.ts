@@ -16,6 +16,9 @@ export interface EnvironmentVariables {
   JWT_SECRET?: string;
   ADMIN_BOOTSTRAP_TOKEN?: string;
   UPLOAD_ROOT?: string;
+  RATE_LIMIT_TTL_MS?: string;
+  RATE_LIMIT_LIMIT?: string;
+  COMMENT_LIST_CACHE_TTL_SECONDS?: string;
 }
 
 export interface AppConfig {
@@ -38,6 +41,11 @@ export interface AppConfig {
   jwtSecret: string;
   adminBootstrapToken: string;
   uploadRoot: string;
+  rateLimit: {
+    ttlMilliseconds: number;
+    limit: number;
+  };
+  commentListCacheTtlSeconds: number;
 }
 
 export const appConfig = registerAs("app", (): AppConfig => {
@@ -62,7 +70,12 @@ export const appConfig = registerAs("app", (): AppConfig => {
     elasticsearchNode: env.ELASTICSEARCH_NODE ?? "http://localhost:9200",
     jwtSecret: env.JWT_SECRET ?? "change-me-in-local-env",
     adminBootstrapToken: env.ADMIN_BOOTSTRAP_TOKEN ?? "local-bootstrap-token",
-    uploadRoot: env.UPLOAD_ROOT ?? "storage/uploads"
+    uploadRoot: env.UPLOAD_ROOT ?? "storage/uploads",
+    rateLimit: {
+      ttlMilliseconds: Number(env.RATE_LIMIT_TTL_MS ?? 60000),
+      limit: Number(env.RATE_LIMIT_LIMIT ?? 120)
+    },
+    commentListCacheTtlSeconds: Number(env.COMMENT_LIST_CACHE_TTL_SECONDS ?? 30)
   };
 });
 
@@ -70,7 +83,10 @@ export function validateEnvironment(env: EnvironmentVariables) {
   const numericValues = {
     API_PORT: env.API_PORT,
     DATABASE_PORT: env.DATABASE_PORT,
-    REDIS_PORT: env.REDIS_PORT
+    REDIS_PORT: env.REDIS_PORT,
+    RATE_LIMIT_TTL_MS: env.RATE_LIMIT_TTL_MS,
+    RATE_LIMIT_LIMIT: env.RATE_LIMIT_LIMIT,
+    COMMENT_LIST_CACHE_TTL_SECONDS: env.COMMENT_LIST_CACHE_TTL_SECONDS
   };
 
   for (const [key, value] of Object.entries(numericValues)) {

@@ -17,7 +17,32 @@ import { SearchModule } from "../search/search.module";
         }
       })
     }),
-    BullModule.registerQueue({ name: "attachments" }, { name: "search-index" })
+    BullModule.registerQueue(
+      {
+        name: "attachments",
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: {
+            type: "exponential",
+            delay: 1000
+          },
+          removeOnComplete: 1000,
+          removeOnFail: 5000
+        }
+      },
+      {
+        name: "search-index",
+        defaultJobOptions: {
+          attempts: 5,
+          backoff: {
+            type: "exponential",
+            delay: 1000
+          },
+          removeOnComplete: 5000,
+          removeOnFail: 10000
+        }
+      }
+    )
   ],
   providers: [AttachmentQueueProcessor, SearchIndexQueueProcessor],
   exports: [BullModule]

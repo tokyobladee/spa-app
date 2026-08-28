@@ -1,4 +1,5 @@
 import { NotFoundException } from "@nestjs/common";
+import type { ConfigService } from "@nestjs/config";
 import type { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Queue } from "bullmq";
 import type { Repository } from "typeorm";
@@ -98,6 +99,12 @@ function buildSearchQueue() {
   };
 }
 
+function buildConfig() {
+  return {
+    getOrThrow: jest.fn(() => 30)
+  } as unknown as ConfigService;
+}
+
 describe(CommentsService.name, () => {
   it("lists top-level comments with allowlisted sorting and pagination", async () => {
     const comment = buildComment();
@@ -119,6 +126,7 @@ describe(CommentsService.name, () => {
       events,
       new CommentsMapper(),
       cache,
+      buildConfig(),
       searchQueue
     );
 
@@ -176,6 +184,7 @@ describe(CommentsService.name, () => {
       { emit } as unknown as EventEmitter2,
       new CommentsMapper(),
       cache,
+      buildConfig(),
       searchQueue
     );
 
@@ -229,6 +238,7 @@ describe(CommentsService.name, () => {
       events,
       new CommentsMapper(),
       cache,
+      buildConfig(),
       searchQueue
     );
 

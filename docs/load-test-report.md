@@ -19,8 +19,8 @@ docker run --rm -v "${PWD}/tests/load:/scripts" -e API_BASE_URL=http://host.dock
 - HTTP requests: 60
 - Checks: 60/60
 - HTTP failure rate: 0.00%
-- HTTP duration p95: 24.99 ms
-- Comment request duration p95: 5 ms
+- HTTP duration p95: 25.01 ms
+- Comment request duration p95: 6 ms
 
 ## Findings
 
@@ -33,7 +33,8 @@ The default k6 scenario in `tests/load/comments.js` keeps a ramping-arrival-rate
 ## Next Tuning Targets
 
 - Validate MySQL indexes with high-cardinality users and comment trees.
-- Measure Redis hit ratio for first-page comment reads.
-- Track queue latency for attachment and search indexing jobs.
+- Tune `RATE_LIMIT_TTL_MS` and `RATE_LIMIT_LIMIT` per deployment traffic shape.
+- Tune `COMMENT_LIST_CACHE_TTL_SECONDS` from Redis hit ratio for first-page comment reads.
+- Track queue latency for attachment and search indexing jobs; queue retries and exponential backoff are enabled.
 - Watch Elasticsearch indexing delay after write bursts.
 - Measure WebSocket fanout separately from database writes.

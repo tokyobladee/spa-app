@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
@@ -24,12 +24,15 @@ import { UsersModule } from "./users/users.module";
       load: [appConfig],
       validate: validateEnvironment
     }),
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000,
-        limit: 120
-      }
-    ]),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: config.getOrThrow<number>("app.rateLimit.ttlMilliseconds"),
+          limit: config.getOrThrow<number>("app.rateLimit.limit")
+        }
+      ]
+    }),
     EventEmitterModule.forRoot(),
     CacheModule,
     DatabaseModule,
