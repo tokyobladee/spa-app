@@ -30,7 +30,7 @@ export class CreateCommentDto {
   email: string;
 
   @IsOptional()
-  @IsUrl({ require_protocol: true, protocols: ["http", "https"] })
+  @IsUrl({ require_protocol: true, protocols: ["http", "https"], require_tld: false })
   @MaxLength(2048)
   homePage?: string;
 

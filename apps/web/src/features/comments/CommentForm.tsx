@@ -21,6 +21,7 @@ const initialForm = {
 export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
   const api = useMemo(() => new CommentsApi(), []);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const captchaInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState(initialForm);
   const [captcha, setCaptcha] = useState<CaptchaChallenge | null>(null);
   const [previewHtml, setPreviewHtml] = useState("");
@@ -29,24 +30,29 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
   const [fileError, setFileError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    void refreshCaptcha();
+    void refreshCaptcha(true);
   }, []);
 
-  async function refreshCaptcha() {
-    setError(null);
+  async function refreshCaptcha(clearError = false) {
+    if (clearError) {
+      setError(null);
+    }
 
     try {
       setCaptcha(await api.getCaptcha());
       updateField("captchaValue", "");
-    } catch (error) {
+    } catch (err) {
       setCaptcha(null);
-      setError(error instanceof Error ? error.message : "Unable to load CAPTCHA");
+      setError(err instanceof Error ? err.message : "Unable to load CAPTCHA");
     }
   }
 
   function updateField(field: keyof typeof initialForm, value: string) {
+    setError(null);
+    setSuccessMessage(null);
     setForm((current) => ({
       ...current,
       [field]: value
@@ -114,6 +120,13 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
     event.preventDefault();
 
     if (!captcha) {
+      setError("CAPTCHA is not ready. Please click Refresh.");
+      return;
+    }
+
+    if (!form.captchaValue.trim()) {
+      setError("Please enter the CAPTCHA code from the image.");
+      captchaInputRef.current?.focus();
       return;
     }
 
@@ -125,22 +138,23 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
 
     setSubmitting(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       const payload: CreateCommentPayload = {
-        userName: form.userName,
-        email: form.email,
+        userName: form.userName.trim(),
+        email: form.email.trim(),
         captchaId: captcha.id,
-        captchaValue: form.captchaValue,
-        text: form.text
+        captchaValue: form.captchaValue.trim(),
+        text: form.text.trim()
       };
 
       if (parentId) {
         payload.parentId = parentId;
       }
 
-      if (form.homePage) {
-        payload.homePage = form.homePage;
+      if (form.homePage?.trim()) {
+        payload.homePage = form.homePage.trim();
       }
 
       if (attachment) {
@@ -152,10 +166,15 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
       setPreviewHtml("");
       setAttachment(null);
       setFilePreview(null);
-      await refreshCaptcha();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Unable to create comment");
-      await refreshCaptcha();
+      setSuccessMessage(parentId ? "Reply published successfully!" : "Comment published successfully!");
+      await refreshCaptcha(false);
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Unable to create comment";
+      setError(errMsg);
+      await refreshCaptcha(false);
+      if (errMsg.toLowerCase().includes("captcha")) {
+        captchaInputRef.current?.focus();
+      }
     } finally {
       setSubmitting(false);
     }
@@ -163,6 +182,7 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
 
   async function preview() {
     setError(null);
+    setSuccessMessage(null);
 
     const markupError = validateCommentMarkup(form.text);
     if (markupError) {
@@ -174,61 +194,136 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
     try {
       const result = await api.previewComment(form.text);
       setPreviewHtml(result.sanitizedHtml);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Unable to preview comment");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to preview comment");
     }
   }
 
   return (
     <form className={parentId ? "comment-form compact" : "comment-form"} onSubmit={(event) => void submit(event)}>
       <label className="field">
-        User Name
-        <input value={form.userName} onChange={(event) => updateField("userName", event.target.value)} pattern="[A-Za-z0-9]+" required />
+        User Name *
+        <input
+          value={form.userName}
+          onChange={(event) => updateField("userName", event.target.value)}
+          pattern="[A-Za-z0-9]+"
+          placeholder="latin letters and digits only"
+          required
+        />
       </label>
       <label className="field">
-        E-mail
-        <input value={form.email} onChange={(event) => updateField("email", event.target.value)} type="email" required />
+        E-mail *
+        <input
+          value={form.email}
+          onChange={(event) => updateField("email", event.target.value)}
+          type="email"
+          placeholder="name@example.com"
+          required
+        />
       </label>
       <label className="field">
         Home page
-        <input value={form.homePage} onChange={(event) => updateField("homePage", event.target.value)} type="url" />
+        <input
+          value={form.homePage}
+          onChange={(event) => updateField("homePage", event.target.value)}
+          type="url"
+          placeholder="http://example.com"
+        />
       </label>
       <label className="field textarea-field">
-        Text
-        <textarea ref={textareaRef} value={form.text} onChange={(event) => updateField("text", event.target.value)} required rows={5} />
+        Text *
+        <textarea
+          ref={textareaRef}
+          value={form.text}
+          onChange={(event) => updateField("text", event.target.value)}
+          placeholder="Write your comment here..."
+          required
+          rows={5}
+        />
       </label>
       <div className="toolbar" aria-label="Formatting">
-        <button type="button" onClick={() => insertTag("i")}>i</button>
-        <button type="button" onClick={() => insertTag("strong")}>strong</button>
-        <button type="button" onClick={() => insertTag("code")}>code</button>
-        <button type="button" onClick={() => insertTag("a")}>a</button>
+        <button type="button" onClick={() => insertTag("i")} title="Italic [i]">
+          [i]
+        </button>
+        <button type="button" onClick={() => insertTag("strong")} title="Bold [strong]">
+          [strong]
+        </button>
+        <button type="button" onClick={() => insertTag("code")} title="Code [code]">
+          [code]
+        </button>
+        <button type="button" onClick={() => insertTag("a")} title="Link [a]">
+          [a]
+        </button>
       </div>
       <label className="field">
         Attachment
-        <input type="file" accept=".jpg,.jpeg,.gif,.png,.txt,image/jpeg,image/png,image/gif,text/plain" onChange={(event) => void handleFile(event.target.files?.[0] ?? null)} />
+        <input
+          type="file"
+          accept=".jpg,.jpeg,.gif,.png,.txt,image/jpeg,image/png,image/gif,text/plain"
+          onChange={(event) => void handleFile(event.target.files?.[0] ?? null)}
+        />
       </label>
       <div className="captcha-field">
         <div className="captcha-heading">
-          <span>CAPTCHA</span>
-          <button type="button" onClick={() => void refreshCaptcha()}>
-            Refresh
+          <span>CAPTCHA *</span>
+          <button type="button" onClick={() => void refreshCaptcha(true)} title="Get new CAPTCHA image">
+            🔄 Refresh
           </button>
         </div>
         <div className="captcha-row">
-          {captcha ? <div className="captcha" aria-label="CAPTCHA image" dangerouslySetInnerHTML={{ __html: captcha.image }} /> : <div className="captcha captcha-empty">Unavailable</div>}
+          {captcha ? (
+            <div className="captcha" aria-label="CAPTCHA image" dangerouslySetInnerHTML={{ __html: captcha.image }} />
+          ) : (
+            <div className="captcha captcha-empty">Unavailable</div>
+          )}
           <label className="field captcha-input">
-            Code
-            <input value={form.captchaValue} onChange={(event) => updateField("captchaValue", event.target.value)} pattern="[A-Za-z0-9]+" required />
+            Code *
+            <input
+              ref={captchaInputRef}
+              value={form.captchaValue}
+              onChange={(event) => updateField("captchaValue", event.target.value)}
+              placeholder="Enter symbols above"
+              pattern="[A-Za-z0-9]+"
+              required
+            />
           </label>
         </div>
       </div>
-      <div className="form-actions">
-        <button type="button" onClick={() => void preview()}>Preview</button>
-        <button type="submit" disabled={submitting}>{submitting ? "Submitting" : "Submit"}</button>
-      </div>
-      {previewHtml ? <CommentHtml html={previewHtml} /> : null}
+
+      {error ? (
+        <div className="form-alert error-alert" role="alert">
+          <span className="alert-icon">⚠️</span>
+          <div className="alert-message">{error}</div>
+        </div>
+      ) : null}
+
+      {successMessage ? (
+        <div className="form-alert success-alert" role="status">
+          <span className="alert-icon">✓</span>
+          <div className="alert-message">{successMessage}</div>
+        </div>
+      ) : null}
+
       {fileError ? <p className="error-text">{fileError}</p> : null}
-      {error ? <p className="error-text">{error}</p> : null}
+
+      <div className="form-actions">
+        <button type="button" onClick={() => void preview()}>
+          Preview
+        </button>
+        <button type="submit" disabled={submitting}>
+          {submitting ? "Submitting..." : parentId ? "Submit Reply" : "Submit Comment"}
+        </button>
+      </div>
+
+      {previewHtml ? (
+        <div className="preview-container">
+          <div className="preview-header">
+            <strong>Preview</strong>
+          </div>
+          <CommentHtml html={previewHtml} />
+        </div>
+      ) : null}
+
       {filePreview ? (
         <aside className="file-preview">
           <strong>{filePreview.name}</strong>
