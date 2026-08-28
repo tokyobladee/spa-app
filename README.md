@@ -23,7 +23,7 @@ Comments SPA is a production-oriented threaded comments application. Users can c
 - RabbitMQ
 - Elasticsearch
 - Docker Compose
-- Jest, Supertest, Playwright, and k6
+- Jest, Supertest, Docker smoke tests, and k6
 
 ## Getting Started
 
