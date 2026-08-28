@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { CommentsApi, type CaptchaChallenge, type CreateCommentPayload } from "../../api/commentsApi";
 import { createFilePreview, type FilePreview, validateAttachment } from "../../domain/files";
@@ -19,6 +19,7 @@ const initialForm = {
 
 export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
   const api = useMemo(() => new CommentsApi(), []);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [form, setForm] = useState(initialForm);
   const [captcha, setCaptcha] = useState<CaptchaChallenge | null>(null);
   const [previewHtml, setPreviewHtml] = useState("");
@@ -33,7 +34,15 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
   }, []);
 
   async function refreshCaptcha() {
-    setCaptcha(await api.getCaptcha());
+    setError(null);
+
+    try {
+      setCaptcha(await api.getCaptcha());
+      updateField("captchaValue", "");
+    } catch (error) {
+      setCaptcha(null);
+      setError(error instanceof Error ? error.message : "Unable to load CAPTCHA");
+    }
   }
 
   function updateField(field: keyof typeof initialForm, value: string) {
@@ -44,8 +53,40 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
   }
 
   function insertTag(tag: "a" | "code" | "i" | "strong") {
-    const template = tag === "a" ? '<a href="https://" title=""></a>' : `<${tag}></${tag}>`;
-    updateField("text", `${form.text}${template}`);
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      const template = tag === "a" ? '<a href="https://" title=""></a>' : `<${tag}></${tag}>`;
+      updateField("text", `${form.text}${template}`);
+      return;
+    }
+
+    const start = textarea.selectionStart ?? form.text.length;
+    const end = textarea.selectionEnd ?? form.text.length;
+    const selectedText = form.text.substring(start, end);
+
+    let replacement = "";
+    let cursorOffset = 0;
+
+    if (tag === "a") {
+      if (selectedText) {
+        replacement = `<a href="https://" title="${selectedText}">${selectedText}</a>`;
+        cursorOffset = 9;
+      } else {
+        replacement = '<a href="https://" title=""></a>';
+        cursorOffset = 9;
+      }
+    } else {
+      replacement = `<${tag}>${selectedText}</${tag}>`;
+      cursorOffset = selectedText ? replacement.length : tag.length + 2;
+    }
+
+    const nextText = form.text.substring(0, start) + replacement + form.text.substring(end);
+    updateField("text", nextText);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
+    }, 0);
   }
 
   async function handleFile(file: File | null) {
@@ -125,22 +166,22 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
   }
 
   return (
-    <form className="comment-form" onSubmit={(event) => void submit(event)}>
-      <label>
+    <form className={parentId ? "comment-form compact" : "comment-form"} onSubmit={(event) => void submit(event)}>
+      <label className="field">
         User Name
         <input value={form.userName} onChange={(event) => updateField("userName", event.target.value)} pattern="[A-Za-z0-9]+" required />
       </label>
-      <label>
+      <label className="field">
         E-mail
         <input value={form.email} onChange={(event) => updateField("email", event.target.value)} type="email" required />
       </label>
-      <label>
+      <label className="field">
         Home page
         <input value={form.homePage} onChange={(event) => updateField("homePage", event.target.value)} type="url" />
       </label>
-      <label className="textarea-field">
+      <label className="field textarea-field">
         Text
-        <textarea value={form.text} onChange={(event) => updateField("text", event.target.value)} required rows={5} />
+        <textarea ref={textareaRef} value={form.text} onChange={(event) => updateField("text", event.target.value)} required rows={5} />
       </label>
       <div className="toolbar" aria-label="Formatting">
         <button type="button" onClick={() => insertTag("i")}>i</button>
@@ -148,15 +189,25 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
         <button type="button" onClick={() => insertTag("code")}>code</button>
         <button type="button" onClick={() => insertTag("a")}>a</button>
       </div>
-      <label>
+      <label className="field">
         Attachment
         <input type="file" accept=".jpg,.jpeg,.gif,.png,.txt,image/jpeg,image/png,image/gif,text/plain" onChange={(event) => void handleFile(event.target.files?.[0] ?? null)} />
       </label>
-      <label>
-        CAPTCHA
-        <input value={form.captchaValue} onChange={(event) => updateField("captchaValue", event.target.value)} pattern="[A-Za-z0-9]+" required />
-      </label>
-      {captcha ? <div className="captcha" dangerouslySetInnerHTML={{ __html: captcha.image }} /> : null}
+      <div className="captcha-field">
+        <div className="captcha-heading">
+          <span>CAPTCHA</span>
+          <button type="button" onClick={() => void refreshCaptcha()}>
+            Refresh
+          </button>
+        </div>
+        <div className="captcha-row">
+          {captcha ? <div className="captcha" aria-label="CAPTCHA image" dangerouslySetInnerHTML={{ __html: captcha.image }} /> : <div className="captcha captcha-empty">Unavailable</div>}
+          <label className="field captcha-input">
+            Code
+            <input value={form.captchaValue} onChange={(event) => updateField("captchaValue", event.target.value)} pattern="[A-Za-z0-9]+" required />
+          </label>
+        </div>
+      </div>
       <div className="form-actions">
         <button type="button" onClick={() => void preview()}>Preview</button>
         <button type="submit" disabled={submitting}>{submitting ? "Submitting" : "Submit"}</button>

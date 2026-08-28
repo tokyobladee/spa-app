@@ -12,13 +12,19 @@ export function App() {
           <div>
             <p className="eyebrow">Live threaded discussion</p>
             <h1 id="comments-title">Comments</h1>
+            <p className="header-summary">{comments.data.total} total comments</p>
           </div>
           <button type="button" className="primary-action" onClick={() => void comments.refresh()}>
             Refresh
           </button>
         </header>
 
-        <CommentForm onSubmit={comments.createComment} />
+        <section className="compose-panel" aria-label="Create comment">
+          <div className="section-heading">
+            <h2>New comment</h2>
+          </div>
+          <CommentForm onSubmit={comments.createComment} />
+        </section>
 
         {comments.error ? <p className="error-text">{comments.error}</p> : null}
 

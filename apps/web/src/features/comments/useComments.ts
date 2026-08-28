@@ -64,11 +64,25 @@ export function useComments(): CommentsState {
     });
 
     socket.on("comment.created", (comment: CommentItem) => {
-      setData((current) => ({
-        ...current,
-        items: comment.parentId ? current.items : [comment, ...current.items].slice(0, current.pageSize),
-        total: comment.parentId ? current.total : current.total + 1
-      }));
+      setData((current) => {
+        if (comment.parentId) {
+          return {
+            ...current,
+            items: current.items.map((item) =>
+              item.id === comment.parentId
+                ? { ...item, repliesCount: item.repliesCount + 1 }
+                : item
+            ),
+            total: current.total
+          };
+        }
+
+        return {
+          ...current,
+          items: [comment, ...current.items].slice(0, current.pageSize),
+          total: current.total + 1
+        };
+      });
     });
 
     return () => {
