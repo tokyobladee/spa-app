@@ -20,7 +20,7 @@ The application is designed to run as a Dockerized modular monolith with managed
 4. Replace every secret and production endpoint in `.env`.
 5. Create persistent volumes or host-mounted directories for MySQL, Redis, RabbitMQ, Elasticsearch, and uploads.
 6. Run `docker compose up -d --build`.
-7. Run migrations with `docker compose exec api pnpm --filter @comments/api migration:run`.
+7. Run migrations with `docker compose exec api pnpm --filter @comments/api migration:run:prod`.
 8. Put Nginx or a managed reverse proxy in front of the web and API services.
 9. Enable HTTPS, request size limits, gzip or brotli, and health checks.
 
@@ -51,6 +51,7 @@ pnpm typecheck
 pnpm test
 pnpm build
 docker compose up -d --build
-pnpm --filter @comments/api migration:run
+docker compose exec api pnpm --filter @comments/api migration:run:prod
+pnpm test:e2e
 API_BASE_URL=https://your-domain.example k6 run tests/load/comments.js
 ```

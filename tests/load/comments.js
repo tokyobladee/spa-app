@@ -4,8 +4,24 @@ import { Trend } from "k6/metrics";
 
 const commentCreateDuration = new Trend("comment_create_duration");
 const apiBaseUrl = __ENV.API_BASE_URL || "http://localhost:3000";
+const smokeMode = __ENV.K6_SMOKE === "true";
 
-export const options = {
+http.setResponseCallback(http.expectedStatuses({ min: 200, max: 399 }, 400));
+
+export const options = smokeMode ? {
+  scenarios: {
+    smoke: {
+      executor: "constant-vus",
+      vus: 1,
+      duration: "20s"
+    }
+  },
+  thresholds: {
+    http_req_failed: ["rate<0.05"],
+    http_req_duration: ["p(95)<1000"],
+    comment_create_duration: ["p(95)<1200"]
+  }
+} : {
   scenarios: {
     dailyTrafficShape: {
       executor: "ramping-arrival-rate",

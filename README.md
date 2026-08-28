@@ -66,13 +66,16 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm test:e2e
 ```
 
-Run the load-test scenario:
+Run the Docker smoke load test:
 
 ```bash
-API_BASE_URL=http://localhost:3000 pnpm load:test
+docker run --rm -v "${PWD}/tests/load:/scripts" -e API_BASE_URL=http://host.docker.internal:3000 -e K6_SMOKE=true grafana/k6:0.54.0 run /scripts/comments.js
 ```
+
+The load-test report is stored in `docs/load-test-report.md`.
 
 ## Database Schema
 
