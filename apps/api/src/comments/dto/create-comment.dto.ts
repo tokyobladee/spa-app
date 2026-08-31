@@ -1,3 +1,4 @@
+import { Transform } from "class-transformer";
 import {
   IsEmail,
   IsOptional,
@@ -6,11 +7,14 @@ import {
   IsUUID,
   Matches,
   MaxLength,
-  MinLength
+  MinLength,
+  ValidateIf
 } from "class-validator";
 
 export class CreateCommentDto {
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) => (typeof value === "string" && value.trim() === "" ? undefined : value))
+  @ValidateIf((o: CreateCommentDto) => Boolean(o.parentId && o.parentId.trim() !== ""))
   @IsUUID()
   parentId?: string;
 
@@ -30,6 +34,8 @@ export class CreateCommentDto {
   email: string;
 
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) => (typeof value === "string" && value.trim() === "" ? undefined : value))
+  @ValidateIf((o: CreateCommentDto) => Boolean(o.homePage && o.homePage.trim() !== ""))
   @IsUrl({ require_protocol: true, protocols: ["http", "https"], require_tld: false })
   @MaxLength(2048)
   homePage?: string;

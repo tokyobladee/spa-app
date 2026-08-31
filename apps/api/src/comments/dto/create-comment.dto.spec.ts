@@ -18,6 +18,22 @@ describe(CreateCommentDto.name, () => {
     expect(errors).toHaveLength(0);
   });
 
+  it("accepts optional empty string fields", async () => {
+    const dto = plainToInstance(CreateCommentDto, {
+      userName: "User123",
+      email: "user@example.com",
+      homePage: "",
+      parentId: "",
+      captchaId: "e2719f10-f251-4abd-8adf-d555562b7550",
+      captchaValue: "A1B2C3",
+      text: "Hello"
+    });
+
+    const errors = await validate(dto);
+
+    expect(errors).toHaveLength(0);
+  });
+
   it("rejects invalid user identity and empty text", async () => {
     const dto = plainToInstance(CreateCommentDto, {
       userName: "User_123",
