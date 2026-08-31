@@ -184,7 +184,7 @@ function CommentCard({
   onOpenAttachment: (attachment: CommentAttachment) => void;
 }) {
   const api = useMemo(() => new CommentsApi(), []);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [replying, setReplying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
@@ -365,7 +365,7 @@ function ReplyCardNode({
   onOpenAttachment: (attachment: CommentAttachment) => void;
 }) {
   const api = useMemo(() => new CommentsApi(), []);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [replying, setReplying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
