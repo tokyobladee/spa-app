@@ -29,7 +29,7 @@ function formatCommentDate(isoString: string): string {
     const year = String(d.getFullYear()).slice(-2);
     const hours = String(d.getHours()).padStart(2, "0");
     const minutes = String(d.getMinutes()).padStart(2, "0");
-    return `${day}.${month}.${year} в ${hours}:${minutes}`;
+    return `${day}.${month}.${year} at ${hours}:${minutes}`;
   } catch {
     return isoString;
   }
@@ -60,9 +60,9 @@ export function CommentsTable({
 
   function getSortIndicator(field: CommentSortField) {
     if (sortBy !== field) {
-      return <span className="sort-icon neutral">⇅</span>;
+      return <span className="sort-icon neutral">sort</span>;
     }
-    return <span className="sort-icon active">{direction === "asc" ? "▲" : "▼"}</span>;
+    return <span className="sort-icon active">{direction === "asc" ? "^" : "v"}</span>;
   }
 
   return (
@@ -77,7 +77,7 @@ export function CommentsTable({
             type="button"
             className={viewMode === "cards" ? "active" : ""}
             onClick={() => setViewMode("cards")}
-            title="Card Feed View (Mockup style)"
+            title="Card feed view"
           >
             Feed View
           </button>
@@ -85,7 +85,7 @@ export function CommentsTable({
             type="button"
             className={viewMode === "table" ? "active" : ""}
             onClick={() => setViewMode("table")}
-            title="Table View (Columns with metadata)"
+            title="Table view"
           >
             Table View
           </button>
@@ -244,7 +244,7 @@ function CommentCard({
   const avatarUrl = getAvatarUrl(comment.author);
 
   return (
-    <article className="comment-mockup-card" id={`comment-${comment.id}`}>
+    <article className="comment-card" id={`comment-${comment.id}`}>
       <div className="card-inner">
         <header className="card-header">
           <div className="card-author-info">
@@ -302,7 +302,7 @@ function CommentCard({
               onClick={() => handleVote(1)}
               title="Upvote"
             >
-              ↑
+              +
             </button>
             <span className={`rating-score ${rating > 0 ? "positive" : rating < 0 ? "negative" : ""}`}>
               {rating}
@@ -313,7 +313,7 @@ function CommentCard({
               onClick={() => handleVote(-1)}
               title="Downvote"
             >
-              ↓
+              -
             </button>
           </div>
         </header>
@@ -326,7 +326,7 @@ function CommentCard({
         {comment.repliesCount > 0 ? (
           <div className="card-replies-meta">
             <button type="button" className="thread-toggle-btn" onClick={toggleReplies}>
-              {expanded ? "▾ Hide replies" : `▸ Show replies (${comment.repliesCount})`}
+              {expanded ? "Hide replies" : `Show replies (${comment.repliesCount})`}
             </button>
           </div>
         ) : null}
@@ -434,7 +434,7 @@ function ReplyCardNode({
   const avatarUrl = getAvatarUrl(reply.author);
 
   return (
-    <article className="reply-mockup-card" id={`comment-${reply.id}`}>
+    <article className="reply-card-node" id={`comment-${reply.id}`}>
       <div className="card-inner">
         <header className="card-header">
           <div className="card-author-info">
@@ -492,7 +492,7 @@ function ReplyCardNode({
               onClick={() => handleVote(1)}
               title="Upvote"
             >
-              ↑
+              +
             </button>
             <span className={`rating-score ${rating > 0 ? "positive" : rating < 0 ? "negative" : ""}`}>
               {rating}
@@ -503,7 +503,7 @@ function ReplyCardNode({
               onClick={() => handleVote(-1)}
               title="Downvote"
             >
-              ↓
+              -
             </button>
           </div>
         </header>
@@ -516,7 +516,7 @@ function ReplyCardNode({
         {reply.repliesCount > 0 ? (
           <div className="card-replies-meta">
             <button type="button" className="thread-toggle-btn" onClick={toggleReplies}>
-              {expanded ? "▾ Hide replies" : `▸ Show replies (${reply.repliesCount})`}
+              {expanded ? "Hide replies" : `Show replies (${reply.repliesCount})`}
             </button>
           </div>
         ) : null}

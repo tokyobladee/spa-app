@@ -356,7 +356,7 @@ export function CommentForm({ parentId, parentUserName, initialQuote, onSubmit, 
       <div className="field">
         <div className="field-header">
           <label htmlFor={`user-${parentId ?? "root"}`} className="field-label">User Name *</label>
-          {fieldErrors.userName ? <span className="field-error-badge">⚠️ {fieldErrors.userName}</span> : null}
+          {fieldErrors.userName ? <span className="field-error-badge">! {fieldErrors.userName}</span> : null}
         </div>
         <input
           id={`user-${parentId ?? "root"}`}
@@ -371,7 +371,7 @@ export function CommentForm({ parentId, parentUserName, initialQuote, onSubmit, 
       <div className="field">
         <div className="field-header">
           <label htmlFor={`email-${parentId ?? "root"}`} className="field-label">E-mail *</label>
-          {fieldErrors.email ? <span className="field-error-badge">⚠️ {fieldErrors.email}</span> : null}
+          {fieldErrors.email ? <span className="field-error-badge">! {fieldErrors.email}</span> : null}
         </div>
         <input
           id={`email-${parentId ?? "root"}`}
@@ -387,7 +387,7 @@ export function CommentForm({ parentId, parentUserName, initialQuote, onSubmit, 
       <div className="field">
         <div className="field-header">
           <label htmlFor={`home-${parentId ?? "root"}`} className="field-label">Home page</label>
-          {fieldErrors.homePage ? <span className="field-error-badge">⚠️ {fieldErrors.homePage}</span> : null}
+          {fieldErrors.homePage ? <span className="field-error-badge">! {fieldErrors.homePage}</span> : null}
         </div>
         <input
           id={`home-${parentId ?? "root"}`}
@@ -399,12 +399,46 @@ export function CommentForm({ parentId, parentUserName, initialQuote, onSubmit, 
         />
       </div>
 
+      <div className="captcha-field">
+        <div className="captcha-heading">
+          <span className="field-label">CAPTCHA *</span>
+          <button type="button" onClick={() => void refreshCaptcha(true)} title="Get new CAPTCHA image">
+            Refresh
+          </button>
+        </div>
+        <div className="captcha-row">
+          {captcha ? (
+            <div className="captcha" aria-label="CAPTCHA image" dangerouslySetInnerHTML={{ __html: captcha.image }} />
+          ) : (
+            <div className="captcha captcha-empty">Unavailable</div>
+          )}
+          <div className="field captcha-input">
+            <div className="field-header">
+              <label htmlFor={`captcha-input-${parentId ?? "root"}`} className="field-label">Code *</label>
+              {fieldErrors.captchaValue ? (
+                <span className="field-error-badge">! {fieldErrors.captchaValue}</span>
+              ) : null}
+            </div>
+            <input
+              id={`captcha-input-${parentId ?? "root"}`}
+              ref={captchaInputRef}
+              className={fieldErrors.captchaValue ? "input-invalid" : ""}
+              value={form.captchaValue}
+              onChange={(event) => updateField("captchaValue", event.target.value)}
+              placeholder="Enter symbols above"
+              pattern="[A-Za-z0-9]+"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
       <div className="field textarea-field">
         <div className="field-header">
           <label htmlFor={`text-${parentId ?? "root"}`} className="field-label">
             {parentUserName ? `Reply to ${parentUserName} *` : "Text *"}
           </label>
-          {fieldErrors.text ? <span className="field-error-badge">⚠️ {fieldErrors.text}</span> : null}
+          {fieldErrors.text ? <span className="field-error-badge">! {fieldErrors.text}</span> : null}
         </div>
         <textarea
           id={`text-${parentId ?? "root"}`}
@@ -436,7 +470,7 @@ export function CommentForm({ parentId, parentUserName, initialQuote, onSubmit, 
       <div className="field">
         <div className="field-header">
           <label htmlFor={`attachment-${parentId ?? "root"}`} className="field-label">Attachment</label>
-          {fileError ? <span className="field-error-badge">⚠️ {fileError}</span> : null}
+          {fileError ? <span className="field-error-badge">! {fileError}</span> : null}
         </div>
         <input
           id={`attachment-${parentId ?? "root"}`}
@@ -446,50 +480,16 @@ export function CommentForm({ parentId, parentUserName, initialQuote, onSubmit, 
         />
       </div>
 
-      <div className="captcha-field">
-        <div className="captcha-heading">
-          <span className="field-label">CAPTCHA *</span>
-          <button type="button" onClick={() => void refreshCaptcha(true)} title="Get new CAPTCHA image">
-            Refresh
-          </button>
-        </div>
-        <div className="captcha-row">
-          {captcha ? (
-            <div className="captcha" aria-label="CAPTCHA image" dangerouslySetInnerHTML={{ __html: captcha.image }} />
-          ) : (
-            <div className="captcha captcha-empty">Unavailable</div>
-          )}
-          <div className="field captcha-input">
-            <div className="field-header">
-              <label htmlFor={`captcha-input-${parentId ?? "root"}`} className="field-label">Code *</label>
-              {fieldErrors.captchaValue ? (
-                <span className="field-error-badge">⚠️ {fieldErrors.captchaValue}</span>
-              ) : null}
-            </div>
-            <input
-              id={`captcha-input-${parentId ?? "root"}`}
-              ref={captchaInputRef}
-              className={fieldErrors.captchaValue ? "input-invalid" : ""}
-              value={form.captchaValue}
-              onChange={(event) => updateField("captchaValue", event.target.value)}
-              placeholder="Enter symbols above"
-              pattern="[A-Za-z0-9]+"
-              required
-            />
-          </div>
-        </div>
-      </div>
-
       {error ? (
         <div className="form-alert error-alert" role="alert">
-          <span className="alert-icon">⚠️</span>
+          <span className="alert-icon">!</span>
           <div className="alert-message">{error}</div>
         </div>
       ) : null}
 
       {successMessage ? (
         <div className="form-alert success-alert" role="status">
-          <span className="alert-icon">✓</span>
+          <span className="alert-icon">OK</span>
           <div className="alert-message">{successMessage}</div>
         </div>
       ) : null}

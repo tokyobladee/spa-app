@@ -455,7 +455,6 @@ textarea {
   white-space: pre-wrap;
 }
 
-/* Avatar Picker Section in Form */
 .form-avatar-section {
   grid-column: 1 / -1;
   display: flex;
@@ -549,7 +548,6 @@ textarea {
   white-space: nowrap;
 }
 
-/* Heading row with view toggle */
 .heading-title-row {
   display: flex;
   align-items: center;
@@ -589,7 +587,6 @@ textarea {
   color: #ffffff;
 }
 
-/* PDF Mockup Style: Cards Feed View */
 .comments-feed {
   display: flex;
   flex-direction: column;
@@ -606,8 +603,8 @@ textarea {
   background: #fbfdfc;
 }
 
-.comment-mockup-card,
-.reply-mockup-card {
+.comment-card,
+.reply-card-node {
   display: flex;
   flex-direction: column;
   background: #ffffff;
@@ -618,8 +615,8 @@ textarea {
   transition: box-shadow 140ms ease;
 }
 
-.comment-mockup-card:hover,
-.reply-mockup-card:hover {
+.comment-card:hover,
+.reply-card-node:hover {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.07);
 }
 
@@ -704,7 +701,6 @@ textarea {
   background: #e0eee8;
 }
 
-/* Rating Controls */
 .card-rating-control {
   display: flex;
   align-items: center;
@@ -799,7 +795,6 @@ textarea {
   animation: fade-in 140ms ease-out;
 }
 
-/* Cascading Thread Tree for Cards */
 .card-thread-tree {
   display: flex;
   flex-direction: column;
@@ -886,7 +881,6 @@ tr:last-child td {
   color: #647b74;
 }
 
-/* Author cell styling */
 .author-cell {
   display: flex;
   align-items: flex-start;
@@ -972,7 +966,6 @@ tr:last-child td {
   color: #ffffff;
 }
 
-/* Thread and cascading replies */
 .thread-row td {
   background: #f5f9f7;
   padding: 16px 20px 24px;
@@ -1050,7 +1043,6 @@ tr:last-child td {
   background: #ffffff;
 }
 
-/* Attachments */
 .attachments-list {
   display: flex;
   flex-wrap: wrap;
@@ -1096,7 +1088,6 @@ tr:last-child td {
   color: #184d47;
 }
 
-/* Lightbox Modal */
 .lightbox-backdrop {
   position: fixed;
   inset: 0;

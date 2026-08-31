@@ -81,7 +81,7 @@ export function AttachmentLightbox({ attachment, onClose }: AttachmentLightboxPr
             <span className="lightbox-meta">
               {formattedSize}
               {attachment.width && attachment.height
-                ? ` • ${attachment.width}×${attachment.height} px`
+                ? ` - ${attachment.width}x${attachment.height} px`
                 : null}
             </span>
           </div>
@@ -101,7 +101,7 @@ export function AttachmentLightbox({ attachment, onClose }: AttachmentLightboxPr
               onClick={onClose}
               aria-label="Close preview"
             >
-              ✕
+              x
             </button>
           </div>
         </header>
