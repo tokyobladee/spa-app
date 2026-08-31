@@ -10,6 +10,14 @@ interface CommentFormProps {
   onSubmit: (payload: CreateCommentPayload) => Promise<void>;
 }
 
+interface FieldErrors {
+  userName?: string;
+  email?: string;
+  homePage?: string;
+  text?: string;
+  captchaValue?: string;
+}
+
 const initialForm = {
   userName: "",
   email: "",
@@ -30,6 +38,7 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
   const [fileError, setFileError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,11 +48,16 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
   async function refreshCaptcha(clearError = false) {
     if (clearError) {
       setError(null);
+      setFieldErrors((curr) => {
+        const next = { ...curr };
+        delete next.captchaValue;
+        return next;
+      });
     }
 
     try {
       setCaptcha(await api.getCaptcha());
-      updateField("captchaValue", "");
+      setForm((curr) => ({ ...curr, captchaValue: "" }));
     } catch (err) {
       setCaptcha(null);
       setError(err instanceof Error ? err.message : "Unable to load CAPTCHA");
@@ -53,10 +67,84 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
   function updateField(field: keyof typeof initialForm, value: string) {
     setError(null);
     setSuccessMessage(null);
+    setFieldErrors((curr) => {
+      const next = { ...curr };
+      delete next[field];
+      return next;
+    });
     setForm((current) => ({
       ...current,
       [field]: value
     }));
+  }
+
+  function validateClientSide(): FieldErrors {
+    const errors: FieldErrors = {};
+
+    const trimmedUser = form.userName.trim();
+    if (!trimmedUser) {
+      errors.userName = "User Name is required";
+    } else if (!/^[A-Za-z0-9]+$/.test(trimmedUser)) {
+      errors.userName = "Latin letters and digits only";
+    } else if (trimmedUser.length > 64) {
+      errors.userName = "Max 64 characters allowed";
+    }
+
+    const trimmedEmail = form.email.trim();
+    if (!trimmedEmail) {
+      errors.email = "E-mail is required";
+    } else if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(trimmedEmail)) {
+      errors.email = "Invalid email format (e.g. name@example.com)";
+    }
+
+    const trimmedHome = form.homePage.trim();
+    if (trimmedHome) {
+      try {
+        const parsedUrl = new URL(trimmedHome);
+        if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+          errors.homePage = "Must start with http:// or https://";
+        }
+      } catch {
+        errors.homePage = "Invalid URL (e.g. https://example.com)";
+      }
+    }
+
+    const markupError = validateCommentMarkup(form.text);
+    if (markupError) {
+      errors.text = markupError;
+    }
+
+    const trimmedCaptcha = form.captchaValue.trim();
+    if (!trimmedCaptcha) {
+      errors.captchaValue = "Code is required";
+    } else if (!/^[A-Za-z0-9]+$/.test(trimmedCaptcha)) {
+      errors.captchaValue = "Letters and digits only";
+    }
+
+    return errors;
+  }
+
+  function parseServerErrors(errorMessage: string): FieldErrors {
+    const errors: FieldErrors = {};
+    const lower = errorMessage.toLowerCase();
+
+    if (lower.includes("email")) {
+      errors.email = "Invalid email address";
+    }
+    if (lower.includes("username") || lower.includes("user_name")) {
+      errors.userName = "Only Latin letters and digits allowed";
+    }
+    if (lower.includes("homepage") || lower.includes("home_page") || lower.includes("url")) {
+      errors.homePage = "Invalid URL address";
+    }
+    if (lower.includes("captcha")) {
+      errors.captchaValue = "Incorrect CAPTCHA code";
+    }
+    if (lower.includes("markup") || lower.includes("tag") || lower.includes("xhtml") || lower.includes("text")) {
+      errors.text = errorMessage;
+    }
+
+    return errors;
   }
 
   function insertTag(tag: "a" | "code" | "i" | "strong") {
@@ -124,20 +212,16 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
       return;
     }
 
-    if (!form.captchaValue.trim()) {
-      setError("Please enter the CAPTCHA code from the image.");
-      captchaInputRef.current?.focus();
-      return;
-    }
-
-    const markupError = validateCommentMarkup(form.text);
-    if (markupError) {
-      setError(markupError);
+    const validationErrors = validateClientSide();
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setError("Please correct the highlighted fields above.");
       return;
     }
 
     setSubmitting(true);
     setError(null);
+    setFieldErrors({});
     setSuccessMessage(null);
 
     try {
@@ -166,11 +250,13 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
       setPreviewHtml("");
       setAttachment(null);
       setFilePreview(null);
+      setFieldErrors({});
       setSuccessMessage(parentId ? "Reply published successfully!" : "Comment published successfully!");
       await refreshCaptcha(false);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "Unable to create comment";
       setError(errMsg);
+      setFieldErrors(parseServerErrors(errMsg));
       await refreshCaptcha(false);
       if (errMsg.toLowerCase().includes("captcha")) {
         captchaInputRef.current?.focus();
@@ -186,10 +272,17 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
 
     const markupError = validateCommentMarkup(form.text);
     if (markupError) {
+      setFieldErrors((curr) => ({ ...curr, text: markupError }));
       setError(markupError);
       setPreviewHtml("");
       return;
     }
+
+    setFieldErrors((curr) => {
+      const next = { ...curr };
+      delete next.text;
+      return next;
+    });
 
     try {
       const result = await api.previewComment(form.text);
@@ -200,47 +293,70 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
   }
 
   return (
-    <form className={parentId ? "comment-form compact" : "comment-form"} onSubmit={(event) => void submit(event)}>
-      <label className="field">
-        User Name *
+    <form className={parentId ? "comment-form compact" : "comment-form"} onSubmit={(event) => void submit(event)} noValidate>
+      <div className="field">
+        <div className="field-header">
+          <label htmlFor={`user-${parentId ?? "root"}`} className="field-label">User Name *</label>
+          {fieldErrors.userName ? <span className="field-error-badge">⚠️ {fieldErrors.userName}</span> : null}
+        </div>
         <input
+          id={`user-${parentId ?? "root"}`}
+          className={fieldErrors.userName ? "input-invalid" : ""}
           value={form.userName}
           onChange={(event) => updateField("userName", event.target.value)}
-          pattern="[A-Za-z0-9]+"
           placeholder="latin letters and digits only"
           required
         />
-      </label>
-      <label className="field">
-        E-mail *
+      </div>
+
+      <div className="field">
+        <div className="field-header">
+          <label htmlFor={`email-${parentId ?? "root"}`} className="field-label">E-mail *</label>
+          {fieldErrors.email ? <span className="field-error-badge">⚠️ {fieldErrors.email}</span> : null}
+        </div>
         <input
+          id={`email-${parentId ?? "root"}`}
+          className={fieldErrors.email ? "input-invalid" : ""}
           value={form.email}
           onChange={(event) => updateField("email", event.target.value)}
           type="email"
           placeholder="name@example.com"
           required
         />
-      </label>
-      <label className="field">
-        Home page
+      </div>
+
+      <div className="field">
+        <div className="field-header">
+          <label htmlFor={`home-${parentId ?? "root"}`} className="field-label">Home page</label>
+          {fieldErrors.homePage ? <span className="field-error-badge">⚠️ {fieldErrors.homePage}</span> : null}
+        </div>
         <input
+          id={`home-${parentId ?? "root"}`}
+          className={fieldErrors.homePage ? "input-invalid" : ""}
           value={form.homePage}
           onChange={(event) => updateField("homePage", event.target.value)}
           type="url"
           placeholder="http://example.com"
         />
-      </label>
-      <label className="field textarea-field">
-        Text *
+      </div>
+
+      <div className="field textarea-field">
+        <div className="field-header">
+          <label htmlFor={`text-${parentId ?? "root"}`} className="field-label">Text *</label>
+          {fieldErrors.text ? <span className="field-error-badge">⚠️ {fieldErrors.text}</span> : null}
+        </div>
         <textarea
+          id={`text-${parentId ?? "root"}`}
           ref={textareaRef}
+          className={fieldErrors.text ? "input-invalid" : ""}
           value={form.text}
           onChange={(event) => updateField("text", event.target.value)}
           placeholder="Write your comment here..."
           required
           rows={5}
         />
-      </label>
+      </div>
+
       <div className="toolbar" aria-label="Formatting">
         <button type="button" onClick={() => insertTag("i")} title="Italic [i]">
           [i]
@@ -255,17 +371,23 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
           [a]
         </button>
       </div>
-      <label className="field">
-        Attachment
+
+      <div className="field">
+        <div className="field-header">
+          <label htmlFor={`attachment-${parentId ?? "root"}`} className="field-label">Attachment</label>
+          {fileError ? <span className="field-error-badge">⚠️ {fileError}</span> : null}
+        </div>
         <input
+          id={`attachment-${parentId ?? "root"}`}
           type="file"
           accept=".jpg,.jpeg,.gif,.png,.txt,image/jpeg,image/png,image/gif,text/plain"
           onChange={(event) => void handleFile(event.target.files?.[0] ?? null)}
         />
-      </label>
+      </div>
+
       <div className="captcha-field">
         <div className="captcha-heading">
-          <span>CAPTCHA *</span>
+          <span className="field-label">CAPTCHA *</span>
           <button type="button" onClick={() => void refreshCaptcha(true)} title="Get new CAPTCHA image">
             🔄 Refresh
           </button>
@@ -276,17 +398,24 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
           ) : (
             <div className="captcha captcha-empty">Unavailable</div>
           )}
-          <label className="field captcha-input">
-            Code *
+          <div className="field captcha-input">
+            <div className="field-header">
+              <label htmlFor={`captcha-input-${parentId ?? "root"}`} className="field-label">Code *</label>
+              {fieldErrors.captchaValue ? (
+                <span className="field-error-badge">⚠️ {fieldErrors.captchaValue}</span>
+              ) : null}
+            </div>
             <input
+              id={`captcha-input-${parentId ?? "root"}`}
               ref={captchaInputRef}
+              className={fieldErrors.captchaValue ? "input-invalid" : ""}
               value={form.captchaValue}
               onChange={(event) => updateField("captchaValue", event.target.value)}
               placeholder="Enter symbols above"
               pattern="[A-Za-z0-9]+"
               required
             />
-          </label>
+          </div>
         </div>
       </div>
 
@@ -303,8 +432,6 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
           <div className="alert-message">{successMessage}</div>
         </div>
       ) : null}
-
-      {fileError ? <p className="error-text">{fileError}</p> : null}
 
       <div className="form-actions">
         <button type="button" onClick={() => void preview()}>
