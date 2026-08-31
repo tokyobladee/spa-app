@@ -79,7 +79,7 @@ export function CommentsTable({
             onClick={() => setViewMode("cards")}
             title="Card Feed View (Mockup style)"
           >
-            💬 Feed View
+            Feed View
           </button>
           <button
             type="button"
@@ -87,7 +87,7 @@ export function CommentsTable({
             onClick={() => setViewMode("table")}
             title="Table View (Columns with metadata)"
           >
-            📋 Table View
+            Table View
           </button>
         </div>
       </div>
@@ -262,7 +262,9 @@ function CommentCard({
                 title="Bookmark"
                 onClick={() => setBookmarked((b) => !b)}
               >
-                {bookmarked ? "🔖" : "📑"}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
               </button>
               <button
                 type="button"
@@ -270,7 +272,10 @@ function CommentCard({
                 title="Reply"
                 onClick={() => setReplying((r) => !r)}
               >
-                ↩
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 14 4 9 9 4"/>
+                  <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                </svg>
               </button>
               {comment.author.homePage ? (
                 <a
@@ -280,7 +285,11 @@ function CommentCard({
                   className="icon-action-btn"
                   title={`Home page: ${comment.author.homePage}`}
                 >
-                  🌐
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  </svg>
                 </a>
               ) : null}
             </div>
@@ -443,7 +452,9 @@ function ReplyCardNode({
                 title="Bookmark"
                 onClick={() => setBookmarked((b) => !b)}
               >
-                {bookmarked ? "🔖" : "📑"}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
               </button>
               <button
                 type="button"
@@ -451,7 +462,10 @@ function ReplyCardNode({
                 title="Reply"
                 onClick={() => setReplying((r) => !r)}
               >
-                ↩
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 14 4 9 9 4"/>
+                  <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                </svg>
               </button>
               {reply.author.homePage ? (
                 <a
@@ -461,7 +475,11 @@ function ReplyCardNode({
                   className="icon-action-btn"
                   title={`Home page: ${reply.author.homePage}`}
                 >
-                  🌐
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  </svg>
                 </a>
               ) : null}
             </div>
@@ -598,7 +616,7 @@ function CommentTableRow({
                   className="author-homepage"
                   title={comment.author.homePage}
                 >
-                  🌐 {comment.author.homePage.replace(/^https?:\/\//i, "")}
+                  {comment.author.homePage.replace(/^https?:\/\//i, "")}
                 </a>
               ) : null}
             </div>
@@ -694,10 +712,10 @@ function Attachments({
             {isImage ? (
               <div className="thumbnail-wrapper">
                 <img src={attachment.url} alt={attachment.originalName} className="thumbnail-img" />
-                <span className="attachment-label">🔍 {attachment.originalName}</span>
+                <span className="attachment-label">{attachment.originalName}</span>
               </div>
             ) : (
-              <span className="attachment-label">📄 {attachment.originalName}</span>
+              <span className="attachment-label">{attachment.originalName}</span>
             )}
           </button>
         );

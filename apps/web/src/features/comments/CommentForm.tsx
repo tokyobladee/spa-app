@@ -331,7 +331,7 @@ export function CommentForm({ parentId, parentUserName, initialQuote, onSubmit, 
             className="choose-avatar-btn"
             onClick={() => setShowAvatarPicker((v) => !v)}
           >
-            {showAvatarPicker ? "Close Avatars" : "🎨 Choose Avatar"}
+            {showAvatarPicker ? "Close Avatars" : "Choose Avatar"}
           </button>
         </div>
 
@@ -450,7 +450,7 @@ export function CommentForm({ parentId, parentUserName, initialQuote, onSubmit, 
         <div className="captcha-heading">
           <span className="field-label">CAPTCHA *</span>
           <button type="button" onClick={() => void refreshCaptcha(true)} title="Get new CAPTCHA image">
-            🔄 Refresh
+            Refresh
           </button>
         </div>
         <div className="captcha-row">
