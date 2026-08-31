@@ -104,6 +104,7 @@ export class CommentsService {
       userName: input.userName,
       email: input.email,
       homePage: input.homePage ?? null,
+      avatarUrl: input.avatarUrl ?? null,
       ipAddress: metadata.ipAddress,
       userAgent: metadata.userAgent
     });

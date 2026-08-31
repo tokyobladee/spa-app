@@ -455,6 +455,367 @@ textarea {
   white-space: pre-wrap;
 }
 
+/* Avatar Picker Section in Form */
+.form-avatar-section {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f4f8f6;
+  border: 1px solid #d3e2dc;
+  border-radius: 8px;
+}
+
+.avatar-preview-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.current-avatar-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  background: #ffffff;
+  object-fit: cover;
+}
+
+.choose-avatar-btn {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 1px solid #b8cfc7;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #184d47;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.choose-avatar-btn:hover {
+  background: #e8f2ef;
+  border-color: #184d47;
+}
+
+.avatar-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #dce8e3;
+  animation: fade-in 140ms ease-out;
+}
+
+.avatar-preset-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid #cadcd5;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  transition: all 120ms ease;
+}
+
+.avatar-preset-btn:hover {
+  border-color: #184d47;
+  background: #f0f7f4;
+}
+
+.avatar-preset-btn.active {
+  border-color: #184d47;
+  background: #e1efe9;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(24, 77, 71, 0.2);
+}
+
+.avatar-preset-btn img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.avatar-preset-btn span {
+  font-size: 0.78rem;
+  color: #27403a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Heading row with view toggle */
+.heading-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.comments-count-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: #e5efe9;
+  color: #184d47;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.view-mode-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.view-mode-toggle button {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid #c0d4cb;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #314943;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.view-mode-toggle button.active {
+  background: #184d47;
+  border-color: #184d47;
+  color: #ffffff;
+}
+
+/* PDF Mockup Style: Cards Feed View */
+.comments-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0 24px;
+}
+
+.empty-feed {
+  text-align: center;
+  padding: 40px 16px;
+  color: #647b74;
+  border: 1px dashed #d1ded8;
+  border-radius: 8px;
+  background: #fbfdfc;
+}
+
+.comment-mockup-card,
+.reply-mockup-card {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e2ece7;
+  border-radius: 10px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 140ms ease;
+}
+
+.comment-mockup-card:hover,
+.reply-mockup-card:hover {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.07);
+}
+
+.card-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.card-author-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.author-avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #d5e4de;
+  background: #f4f8f6;
+  object-fit: cover;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.author-avatar-img.small {
+  width: 30px;
+  height: 30px;
+}
+
+.author-name-text {
+  font-weight: 800;
+  font-size: 1rem;
+  color: #172026;
+}
+
+.comment-timestamp {
+  font-size: 0.84rem;
+  color: #6c807b;
+  margin-left: 2px;
+}
+
+.card-actions-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.icon-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #7b948d;
+  font-size: 0.92rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 120ms ease;
+}
+
+.icon-action-btn:hover {
+  background: #eef5f2;
+  color: #184d47;
+}
+
+.icon-action-btn.active,
+.icon-action-btn.bookmarked {
+  color: #184d47;
+  background: #e0eee8;
+}
+
+/* Rating Controls */
+.card-rating-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f3f7f5;
+  border: 1px solid #d8e5e0;
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+.vote-btn {
+  border: 0;
+  background: transparent;
+  color: #7b948d;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  border-radius: 3px;
+  transition: all 100ms ease;
+}
+
+.vote-btn:hover {
+  background: #dcece5;
+  color: #184d47;
+}
+
+.vote-btn.voted {
+  color: #184d47;
+  font-weight: 900;
+}
+
+.rating-score {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #4b665f;
+  min-width: 14px;
+  text-align: center;
+}
+
+.rating-score.positive {
+  color: #17655a;
+}
+
+.rating-score.negative {
+  color: #a73232;
+}
+
+.card-content-body {
+  font-size: 0.96rem;
+  line-height: 1.6;
+  color: #1e2a27;
+  word-break: break-word;
+}
+
+.card-content-body blockquote,
+.comment-html blockquote {
+  border-left: 3px solid #3b82f6;
+  margin: 8px 0;
+  padding: 6px 14px;
+  background: #f0f7ff;
+  border-radius: 0 6px 6px 0;
+  color: #45625c;
+  font-style: italic;
+}
+
+.card-replies-meta {
+  display: flex;
+  align-items: center;
+}
+
+.thread-toggle-btn {
+  border: 0;
+  background: transparent;
+  color: #184d47;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 0;
+  transition: color 120ms ease;
+}
+
+.thread-toggle-btn:hover {
+  text-decoration: underline;
+}
+
+.inline-reply-container {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed #dbe8e3;
+  animation: fade-in 140ms ease-out;
+}
+
+/* Cascading Thread Tree for Cards */
+.card-thread-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+  padding-left: 28px;
+  border-left: 2px solid #e0ebe6;
+  animation: fade-in 140ms ease-out;
+}
+
+.card-thread-tree.nested {
+  margin-top: 10px;
+  padding-left: 22px;
+  border-left: 2px solid #d4e3dc;
+}
+
 .table-toolbar {
   margin: 0 24px 16px;
 }

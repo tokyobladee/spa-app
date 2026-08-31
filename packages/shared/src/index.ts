@@ -7,6 +7,7 @@ export interface CommentAuthor {
   userName: string;
   email: string;
   homePage: string | null;
+  avatarUrl?: string | null;
 }
 
 export interface CommentAttachment {

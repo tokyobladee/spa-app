@@ -49,6 +49,7 @@ function buildAuthor(): UserEntity {
     userName: "User123",
     email: "user@example.com",
     homePage: "https://example.com",
+    avatarUrl: null,
     ipAddress: "127.0.0.1",
     userAgent: "test",
     comments: [],
@@ -207,6 +208,7 @@ describe(CommentsService.name, () => {
       userName: "User123",
       email: "user@example.com",
       homePage: "https://example.com",
+      avatarUrl: null,
       ipAddress: "127.0.0.1",
       userAgent: "test"
     });

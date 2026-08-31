@@ -3,6 +3,7 @@ export interface CommentAuthorResponse {
   userName: string;
   email: string;
   homePage: string | null;
+  avatarUrl: string | null;
 }
 
 export interface CommentAttachmentResponse {

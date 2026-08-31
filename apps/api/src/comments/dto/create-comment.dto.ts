@@ -40,6 +40,12 @@ export class CreateCommentDto {
   @MaxLength(2048)
   homePage?: string;
 
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => (typeof value === "string" && value.trim() === "" ? undefined : value))
+  @IsString()
+  @MaxLength(2048)
+  avatarUrl?: string;
+
   @IsString()
   @MinLength(1)
   @MaxLength(10000)

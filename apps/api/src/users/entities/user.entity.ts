@@ -25,6 +25,9 @@ export class UserEntity {
   @Column({ name: "home_page", type: "varchar", length: 2048, nullable: true })
   homePage: string | null;
 
+  @Column({ name: "avatar_url", type: "varchar", length: 2048, nullable: true })
+  avatarUrl: string | null;
+
   @Column({ name: "ip_address", type: "varchar", length: 45, nullable: true })
   ipAddress: string | null;
 

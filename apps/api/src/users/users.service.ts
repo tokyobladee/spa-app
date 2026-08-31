@@ -7,6 +7,7 @@ export interface CommentAuthorInput {
   userName: string;
   email: string;
   homePage: string | null;
+  avatarUrl?: string | null;
   ipAddress: string | null;
   userAgent: string | null;
 }

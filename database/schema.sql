@@ -3,6 +3,7 @@ CREATE TABLE users (
   user_name varchar(64) NOT NULL,
   email varchar(254) NOT NULL,
   home_page varchar(2048) NULL,
+  avatar_url varchar(2048) NULL,
   ip_address varchar(45) NULL,
   user_agent varchar(512) NULL,
   created_at datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),

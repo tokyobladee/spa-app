@@ -1,19 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { CommentsApi, type CaptchaChallenge, type CreateCommentPayload } from "../../api/commentsApi";
+import { AVATAR_PRESETS, getAvatarUrl } from "../../domain/avatars";
 import { createFilePreview, type FilePreview, validateAttachment } from "../../domain/files";
 import { validateCommentMarkup } from "../../domain/markup";
 import { CommentHtml } from "./CommentHtml";
 
 interface CommentFormProps {
   parentId?: string;
+  parentUserName?: string;
+  initialQuote?: string;
   onSubmit: (payload: CreateCommentPayload) => Promise<void>;
+  onCancel?: () => void;
 }
 
 interface FieldErrors {
   userName?: string;
   email?: string;
   homePage?: string;
+  avatarUrl?: string;
   text?: string;
   captchaValue?: string;
 }
@@ -22,15 +27,20 @@ const initialForm = {
   userName: "",
   email: "",
   homePage: "",
+  avatarUrl: "",
   captchaValue: "",
   text: ""
 };
 
-export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
+export function CommentForm({ parentId, parentUserName, initialQuote, onSubmit, onCancel }: CommentFormProps) {
   const api = useMemo(() => new CommentsApi(), []);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const captchaInputRef = useRef<HTMLInputElement>(null);
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState(() => ({
+    ...initialForm,
+    text: initialQuote ? `<i>${initialQuote}</i>\n` : ""
+  }));
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [captcha, setCaptcha] = useState<CaptchaChallenge | null>(null);
   const [previewHtml, setPreviewHtml] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
@@ -77,6 +87,21 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
       [field]: value
     }));
   }
+
+  function selectAvatar(url: string) {
+    updateField("avatarUrl", url);
+    setShowAvatarPicker(false);
+  }
+
+  const currentAvatarPreview = useMemo(() => {
+    return getAvatarUrl({
+      id: "preview",
+      userName: form.userName || "Guest",
+      email: form.email,
+      homePage: form.homePage,
+      avatarUrl: form.avatarUrl || null
+    });
+  }, [form.userName, form.email, form.homePage, form.avatarUrl]);
 
   function validateClientSide(): FieldErrors {
     const errors: FieldErrors = {};
@@ -241,6 +266,10 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
         payload.homePage = form.homePage.trim();
       }
 
+      if (form.avatarUrl?.trim()) {
+        payload.avatarUrl = form.avatarUrl.trim();
+      }
+
       if (attachment) {
         payload.attachment = attachment;
       }
@@ -294,6 +323,36 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
 
   return (
     <form className={parentId ? "comment-form compact" : "comment-form"} onSubmit={(event) => void submit(event)} noValidate>
+      <div className="form-avatar-section">
+        <div className="avatar-preview-box">
+          <img src={currentAvatarPreview} alt="Your Avatar" className="current-avatar-img" />
+          <button
+            type="button"
+            className="choose-avatar-btn"
+            onClick={() => setShowAvatarPicker((v) => !v)}
+          >
+            {showAvatarPicker ? "Close Avatars" : "🎨 Choose Avatar"}
+          </button>
+        </div>
+
+        {showAvatarPicker ? (
+          <div className="avatar-picker-grid">
+            {AVATAR_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                className={`avatar-preset-btn ${form.avatarUrl === preset.url ? "active" : ""}`}
+                onClick={() => selectAvatar(preset.url)}
+                title={preset.name}
+              >
+                <img src={preset.url} alt={preset.name} />
+                <span>{preset.name}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
       <div className="field">
         <div className="field-header">
           <label htmlFor={`user-${parentId ?? "root"}`} className="field-label">User Name *</label>
@@ -342,7 +401,9 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
 
       <div className="field textarea-field">
         <div className="field-header">
-          <label htmlFor={`text-${parentId ?? "root"}`} className="field-label">Text *</label>
+          <label htmlFor={`text-${parentId ?? "root"}`} className="field-label">
+            {parentUserName ? `Reply to ${parentUserName} *` : "Text *"}
+          </label>
           {fieldErrors.text ? <span className="field-error-badge">⚠️ {fieldErrors.text}</span> : null}
         </div>
         <textarea
@@ -440,6 +501,11 @@ export function CommentForm({ parentId, onSubmit }: CommentFormProps) {
         <button type="submit" disabled={submitting}>
           {submitting ? "Submitting..." : parentId ? "Submit Reply" : "Submit Comment"}
         </button>
+        {onCancel ? (
+          <button type="button" className="cancel-btn" onClick={onCancel}>
+            Cancel
+          </button>
+        ) : null}
       </div>
 
       {previewHtml ? (

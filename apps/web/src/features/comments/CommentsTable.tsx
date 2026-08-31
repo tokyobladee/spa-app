@@ -1,6 +1,7 @@
 import type { CommentAttachment, CommentItem, CommentSortField, PaginatedComments, SortDirection } from "@comments/shared";
 import { useMemo, useState } from "react";
 import { CommentsApi, type CreateCommentPayload } from "../../api/commentsApi";
+import { getAvatarUrl } from "../../domain/avatars";
 import { AttachmentLightbox } from "./AttachmentLightbox";
 import { CommentForm } from "./CommentForm";
 import { CommentHtml } from "./CommentHtml";
@@ -19,6 +20,21 @@ interface CommentsTableProps {
 const fields: CommentSortField[] = ["createdAt", "userName", "email"];
 const directions: SortDirection[] = ["desc", "asc"];
 
+function formatCommentDate(isoString: string): string {
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = String(d.getFullYear()).slice(-2);
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${day}.${month}.${year} в ${hours}:${minutes}`;
+  } catch {
+    return isoString;
+  }
+}
+
 export function CommentsTable({
   data,
   sortBy,
@@ -30,6 +46,7 @@ export function CommentsTable({
   onCreateReply
 }: CommentsTableProps) {
   const [activeLightboxAttachment, setActiveLightboxAttachment] = useState<CommentAttachment | null>(null);
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const pages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   function handleHeaderSort(field: CommentSortField) {
@@ -51,50 +68,91 @@ export function CommentsTable({
   return (
     <section className="comments-list" aria-busy={loading}>
       <div className="section-heading">
-        <h2>Discussion</h2>
+        <div className="heading-title-row">
+          <h2>Discussion</h2>
+          <span className="comments-count-badge">{data.total} comments</span>
+        </div>
+        <div className="view-mode-toggle">
+          <button
+            type="button"
+            className={viewMode === "cards" ? "active" : ""}
+            onClick={() => setViewMode("cards")}
+            title="Card Feed View (Mockup style)"
+          >
+            💬 Feed View
+          </button>
+          <button
+            type="button"
+            className={viewMode === "table" ? "active" : ""}
+            onClick={() => setViewMode("table")}
+            title="Table View (Columns with metadata)"
+          >
+            📋 Table View
+          </button>
+        </div>
       </div>
+
       <div className="table-toolbar">
-        <SegmentedControl values={fields} value={sortBy} onChange={onSortByChange} label="Sort field" />
+        <SegmentedControl values={fields} value={sortBy} onChange={onSortByChange} label="Sort by" />
         <SegmentedControl values={directions} value={direction} onChange={onDirectionChange} label="Direction" />
       </div>
 
-      <div className="table-frame">
-        <table>
-          <thead>
-            <tr>
-              <th className="sortable-th" onClick={() => handleHeaderSort("userName")}>
-                <span>User Name {getSortIndicator("userName")}</span>
-              </th>
-              <th className="sortable-th" onClick={() => handleHeaderSort("email")}>
-                <span>E-mail {getSortIndicator("email")}</span>
-              </th>
-              <th className="sortable-th" onClick={() => handleHeaderSort("createdAt")}>
-                <span>Created {getSortIndicator("createdAt")}</span>
-              </th>
-              <th>Comment</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.items.length === 0 ? (
+      {viewMode === "cards" ? (
+        <div className="comments-feed">
+          {data.items.length === 0 ? (
+            <div className="empty-feed">
+              {loading ? "Loading comments..." : "No comments yet. Be the first to leave a comment!"}
+            </div>
+          ) : (
+            data.items.map((comment) => (
+              <CommentCard
+                key={comment.id}
+                comment={comment}
+                onCreateReply={onCreateReply}
+                onOpenAttachment={(att) => setActiveLightboxAttachment(att)}
+              />
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="table-frame">
+          <table>
+            <thead>
               <tr>
-                <td colSpan={5} className="empty-cell">
-                  {loading ? "Loading comments..." : "No comments yet. Be the first to leave a comment!"}
-                </td>
+                <th className="sortable-th" onClick={() => handleHeaderSort("userName")}>
+                  <span>User Name {getSortIndicator("userName")}</span>
+                </th>
+                <th className="sortable-th" onClick={() => handleHeaderSort("email")}>
+                  <span>E-mail {getSortIndicator("email")}</span>
+                </th>
+                <th className="sortable-th" onClick={() => handleHeaderSort("createdAt")}>
+                  <span>Created {getSortIndicator("createdAt")}</span>
+                </th>
+                <th>Comment</th>
+                <th>Actions</th>
               </tr>
-            ) : (
-              data.items.map((comment) => (
-                <CommentRow
-                  key={comment.id}
-                  comment={comment}
-                  onCreateReply={onCreateReply}
-                  onOpenAttachment={(att) => setActiveLightboxAttachment(att)}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {data.items.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="empty-cell">
+                    {loading ? "Loading comments..." : "No comments yet. Be the first to leave a comment!"}
+                  </td>
+                </tr>
+              ) : (
+                data.items.map((comment) => (
+                  <CommentTableRow
+                    key={comment.id}
+                    comment={comment}
+                    onCreateReply={onCreateReply}
+                    onOpenAttachment={(att) => setActiveLightboxAttachment(att)}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <nav className="pagination" aria-label="Comment pages">
         <button type="button" disabled={data.page <= 1} onClick={() => onPageChange(data.page - 1)}>
@@ -116,7 +174,367 @@ export function CommentsTable({
   );
 }
 
-function CommentRow({
+function CommentCard({
+  comment,
+  onCreateReply,
+  onOpenAttachment
+}: {
+  comment: CommentItem;
+  onCreateReply: (payload: CreateCommentPayload) => Promise<void>;
+  onOpenAttachment: (attachment: CommentAttachment) => void;
+}) {
+  const api = useMemo(() => new CommentsApi(), []);
+  const [expanded, setExpanded] = useState(true);
+  const [replying, setReplying] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [userVote, setUserVote] = useState<-1 | 0 | 1>(0);
+  const [replies, setReplies] = useState<CommentItem[]>(comment.replies || []);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadReplies() {
+    setLoading(true);
+    setError(null);
+    try {
+      setReplies(await api.listReplies(comment.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load replies");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function toggleReplies() {
+    const next = !expanded;
+    setExpanded(next);
+    if (next && replies.length === 0 && comment.repliesCount > 0) {
+      void loadReplies();
+    }
+  }
+
+  function handleVote(direction: 1 | -1) {
+    if (userVote === direction) {
+      setUserVote(0);
+      setRating((r) => r - direction);
+    } else {
+      const diff = userVote === 0 ? direction : direction * 2;
+      setUserVote(direction);
+      setRating((r) => r + diff);
+    }
+  }
+
+  function copyPermalink() {
+    const url = `${window.location.origin}#comment-${comment.id}`;
+    if (navigator.clipboard) {
+      void navigator.clipboard.writeText(url);
+    }
+  }
+
+  async function createReply(payload: CreateCommentPayload) {
+    await onCreateReply({
+      ...payload,
+      parentId: comment.id
+    });
+    setReplying(false);
+    setReplies(await api.listReplies(comment.id));
+    setExpanded(true);
+  }
+
+  const avatarUrl = getAvatarUrl(comment.author);
+
+  return (
+    <article className="comment-mockup-card" id={`comment-${comment.id}`}>
+      <div className="card-inner">
+        <header className="card-header">
+          <div className="card-author-info">
+            <img src={avatarUrl} alt={comment.author.userName} className="author-avatar-img" />
+            <span className="author-name-text">{comment.author.userName}</span>
+            <time className="comment-timestamp">{formatCommentDate(comment.createdAt)}</time>
+
+            <div className="card-actions-icons">
+              <button type="button" className="icon-action-btn" title="Copy permalink" onClick={copyPermalink}>
+                #
+              </button>
+              <button
+                type="button"
+                className={`icon-action-btn ${bookmarked ? "bookmarked" : ""}`}
+                title="Bookmark"
+                onClick={() => setBookmarked((b) => !b)}
+              >
+                {bookmarked ? "🔖" : "📑"}
+              </button>
+              <button
+                type="button"
+                className={`icon-action-btn ${replying ? "active" : ""}`}
+                title="Reply"
+                onClick={() => setReplying((r) => !r)}
+              >
+                ↩
+              </button>
+              {comment.author.homePage ? (
+                <a
+                  href={comment.author.homePage}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="icon-action-btn"
+                  title={`Home page: ${comment.author.homePage}`}
+                >
+                  🌐
+                </a>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="card-rating-control">
+            <button
+              type="button"
+              className={`vote-btn up ${userVote === 1 ? "voted" : ""}`}
+              onClick={() => handleVote(1)}
+              title="Upvote"
+            >
+              ↑
+            </button>
+            <span className={`rating-score ${rating > 0 ? "positive" : rating < 0 ? "negative" : ""}`}>
+              {rating}
+            </span>
+            <button
+              type="button"
+              className={`vote-btn down ${userVote === -1 ? "voted" : ""}`}
+              onClick={() => handleVote(-1)}
+              title="Downvote"
+            >
+              ↓
+            </button>
+          </div>
+        </header>
+
+        <div className="card-content-body">
+          <CommentHtml html={comment.sanitizedHtml} />
+          <Attachments attachments={comment.attachments} onOpenAttachment={onOpenAttachment} />
+        </div>
+
+        {comment.repliesCount > 0 ? (
+          <div className="card-replies-meta">
+            <button type="button" className="thread-toggle-btn" onClick={toggleReplies}>
+              {expanded ? "▾ Hide replies" : `▸ Show replies (${comment.repliesCount})`}
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {replying ? (
+        <div className="inline-reply-container">
+          <CommentForm
+            parentId={comment.id}
+            parentUserName={comment.author.userName}
+            onSubmit={createReply}
+            onCancel={() => setReplying(false)}
+          />
+        </div>
+      ) : null}
+
+      {expanded && (replies.length > 0 || loading || error) ? (
+        <div className="card-thread-tree">
+          {error ? <p className="error-text">{error}</p> : null}
+          {loading ? <p className="loading-replies">Loading replies...</p> : null}
+          {replies.map((reply) => (
+            <ReplyCardNode
+              key={reply.id}
+              reply={reply}
+              parentUserName={comment.author.userName}
+              onCreateReply={onCreateReply}
+              onOpenAttachment={onOpenAttachment}
+            />
+          ))}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function ReplyCardNode({
+  reply,
+  parentUserName: _parentUserName,
+  onCreateReply,
+  onOpenAttachment
+}: {
+  reply: CommentItem;
+  parentUserName: string;
+  onCreateReply: (payload: CreateCommentPayload) => Promise<void>;
+  onOpenAttachment: (attachment: CommentAttachment) => void;
+}) {
+  const api = useMemo(() => new CommentsApi(), []);
+  const [expanded, setExpanded] = useState(true);
+  const [replying, setReplying] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [userVote, setUserVote] = useState<-1 | 0 | 1>(0);
+  const [childReplies, setChildReplies] = useState<CommentItem[]>(reply.replies || []);
+  const [error, setError] = useState<string | null>(null);
+
+  function handleVote(direction: 1 | -1) {
+    if (userVote === direction) {
+      setUserVote(0);
+      setRating((r) => r - direction);
+    } else {
+      const diff = userVote === 0 ? direction : direction * 2;
+      setUserVote(direction);
+      setRating((r) => r + diff);
+    }
+  }
+
+  async function loadReplies() {
+    setLoading(true);
+    setError(null);
+    try {
+      setChildReplies(await api.listReplies(reply.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load replies");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function toggleReplies() {
+    const next = !expanded;
+    setExpanded(next);
+    if (next && childReplies.length === 0 && reply.repliesCount > 0) {
+      void loadReplies();
+    }
+  }
+
+  function copyPermalink() {
+    const url = `${window.location.origin}#comment-${reply.id}`;
+    if (navigator.clipboard) {
+      void navigator.clipboard.writeText(url);
+    }
+  }
+
+  async function createReply(payload: CreateCommentPayload) {
+    await onCreateReply({
+      ...payload,
+      parentId: reply.id
+    });
+    setReplying(false);
+    setChildReplies(await api.listReplies(reply.id));
+    setExpanded(true);
+  }
+
+  const avatarUrl = getAvatarUrl(reply.author);
+
+  return (
+    <article className="reply-mockup-card" id={`comment-${reply.id}`}>
+      <div className="card-inner">
+        <header className="card-header">
+          <div className="card-author-info">
+            <img src={avatarUrl} alt={reply.author.userName} className="author-avatar-img small" />
+            <span className="author-name-text">{reply.author.userName}</span>
+            <time className="comment-timestamp">{formatCommentDate(reply.createdAt)}</time>
+
+            <div className="card-actions-icons">
+              <button type="button" className="icon-action-btn" title="Copy permalink" onClick={copyPermalink}>
+                #
+              </button>
+              <button
+                type="button"
+                className={`icon-action-btn ${bookmarked ? "bookmarked" : ""}`}
+                title="Bookmark"
+                onClick={() => setBookmarked((b) => !b)}
+              >
+                {bookmarked ? "🔖" : "📑"}
+              </button>
+              <button
+                type="button"
+                className={`icon-action-btn ${replying ? "active" : ""}`}
+                title="Reply"
+                onClick={() => setReplying((r) => !r)}
+              >
+                ↩
+              </button>
+              {reply.author.homePage ? (
+                <a
+                  href={reply.author.homePage}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="icon-action-btn"
+                  title={`Home page: ${reply.author.homePage}`}
+                >
+                  🌐
+                </a>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="card-rating-control">
+            <button
+              type="button"
+              className={`vote-btn up ${userVote === 1 ? "voted" : ""}`}
+              onClick={() => handleVote(1)}
+              title="Upvote"
+            >
+              ↑
+            </button>
+            <span className={`rating-score ${rating > 0 ? "positive" : rating < 0 ? "negative" : ""}`}>
+              {rating}
+            </span>
+            <button
+              type="button"
+              className={`vote-btn down ${userVote === -1 ? "voted" : ""}`}
+              onClick={() => handleVote(-1)}
+              title="Downvote"
+            >
+              ↓
+            </button>
+          </div>
+        </header>
+
+        <div className="card-content-body">
+          <CommentHtml html={reply.sanitizedHtml} />
+          <Attachments attachments={reply.attachments} onOpenAttachment={onOpenAttachment} />
+        </div>
+
+        {reply.repliesCount > 0 ? (
+          <div className="card-replies-meta">
+            <button type="button" className="thread-toggle-btn" onClick={toggleReplies}>
+              {expanded ? "▾ Hide replies" : `▸ Show replies (${reply.repliesCount})`}
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {replying ? (
+        <div className="inline-reply-container">
+          <CommentForm
+            parentId={reply.id}
+            parentUserName={reply.author.userName}
+            onSubmit={createReply}
+            onCancel={() => setReplying(false)}
+          />
+        </div>
+      ) : null}
+
+      {expanded && (childReplies.length > 0 || loading || error) ? (
+        <div className="card-thread-tree nested">
+          {error ? <p className="error-text">{error}</p> : null}
+          {loading ? <p className="loading-replies">Loading replies...</p> : null}
+          {childReplies.map((child) => (
+            <ReplyCardNode
+              key={child.id}
+              reply={child}
+              parentUserName={reply.author.userName}
+              onCreateReply={onCreateReply}
+              onOpenAttachment={onOpenAttachment}
+            />
+          ))}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function CommentTableRow({
   comment,
   onCreateReply,
   onOpenAttachment
@@ -162,12 +580,14 @@ function CommentRow({
     setExpanded(true);
   }
 
+  const avatarUrl = getAvatarUrl(comment.author);
+
   return (
     <>
       <tr className="comment-main-row">
         <td>
           <div className="author-cell">
-            <div className="author-avatar">{comment.author.userName.charAt(0).toUpperCase()}</div>
+            <img src={avatarUrl} alt={comment.author.userName} className="author-avatar-img small" />
             <div className="author-meta">
               <strong>{comment.author.userName}</strong>
               {comment.author.homePage ? (
@@ -185,7 +605,7 @@ function CommentRow({
           </div>
         </td>
         <td className="email-cell">{comment.author.email}</td>
-        <td className="date-cell">{new Date(comment.createdAt).toLocaleString()}</td>
+        <td className="date-cell">{formatCommentDate(comment.createdAt)}</td>
         <td className="content-cell">
           <CommentHtml html={comment.sanitizedHtml} />
           <Attachments attachments={comment.attachments} onOpenAttachment={onOpenAttachment} />
@@ -220,9 +640,10 @@ function CommentRow({
               {expanded && replies.length > 0 ? (
                 <div className="reply-tree">
                   {replies.map((reply) => (
-                    <ReplyNode
+                    <ReplyCardNode
                       key={reply.id}
                       reply={reply}
+                      parentUserName={comment.author.userName}
                       onCreateReply={onCreateReply}
                       onOpenAttachment={onOpenAttachment}
                     />
@@ -231,8 +652,12 @@ function CommentRow({
               ) : null}
               {replying ? (
                 <div className="reply-form-wrapper">
-                  <h4>Reply to {comment.author.userName}</h4>
-                  <CommentForm parentId={comment.id} onSubmit={createReply} />
+                  <CommentForm
+                    parentId={comment.id}
+                    parentUserName={comment.author.userName}
+                    onSubmit={createReply}
+                    onCancel={() => setReplying(false)}
+                  />
                 </div>
               ) : null}
             </div>
@@ -240,129 +665,6 @@ function CommentRow({
         </tr>
       ) : null}
     </>
-  );
-}
-
-function ReplyNode({
-  reply,
-  onCreateReply,
-  onOpenAttachment
-}: {
-  reply: CommentItem;
-  onCreateReply: (payload: CreateCommentPayload) => Promise<void>;
-  onOpenAttachment: (attachment: CommentAttachment) => void;
-}) {
-  const api = useMemo(() => new CommentsApi(), []);
-  const [expanded, setExpanded] = useState(false);
-  const [replying, setReplying] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [childReplies, setChildReplies] = useState<CommentItem[]>(reply.replies || []);
-  const [error, setError] = useState<string | null>(null);
-
-  async function toggleReplies() {
-    const nextExpanded = !expanded;
-    setExpanded(nextExpanded);
-
-    if (!nextExpanded || childReplies.length > 0 || reply.repliesCount === 0) {
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      setChildReplies(await api.listReplies(reply.id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load replies");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function createReply(payload: CreateCommentPayload) {
-    await onCreateReply({
-      ...payload,
-      parentId: reply.id
-    });
-    setReplying(false);
-    setChildReplies(await api.listReplies(reply.id));
-    setExpanded(true);
-  }
-
-  return (
-    <article className="reply-node">
-      <div className="reply-card">
-        <header className="reply-header">
-          <div className="author-cell">
-            <div className="author-avatar small">{reply.author.userName.charAt(0).toUpperCase()}</div>
-            <div className="author-meta">
-              <strong>{reply.author.userName}</strong>
-              {reply.author.homePage ? (
-                <a
-                  href={reply.author.homePage}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="author-homepage"
-                  title={reply.author.homePage}
-                >
-                  🌐 {reply.author.homePage.replace(/^https?:\/\//i, "")}
-                </a>
-              ) : null}
-            </div>
-          </div>
-          <span className="reply-date">{new Date(reply.createdAt).toLocaleString()}</span>
-        </header>
-
-        <div className="reply-body">
-          <CommentHtml html={reply.sanitizedHtml} />
-          <Attachments attachments={reply.attachments} onOpenAttachment={onOpenAttachment} />
-        </div>
-
-        <footer className="reply-actions">
-          {reply.repliesCount > 0 ? (
-            <button
-              type="button"
-              className="toggle-replies-btn"
-              onClick={() => void toggleReplies()}
-            >
-              {expanded ? "Hide replies" : `Replies (${reply.repliesCount})`}
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className={replying ? "reply-btn active" : "reply-btn"}
-            onClick={() => setReplying((current) => !current)}
-          >
-            {replying ? "Cancel" : "Reply"}
-          </button>
-        </footer>
-      </div>
-
-      {expanded || replying ? (
-        <div className="reply-children-container">
-          {error ? <p className="error-text">{error}</p> : null}
-          {loading ? <p className="loading-replies">Loading replies...</p> : null}
-          {expanded && childReplies.length > 0 ? (
-            <div className="reply-tree nested">
-              {childReplies.map((child) => (
-                <ReplyNode
-                  key={child.id}
-                  reply={child}
-                  onCreateReply={onCreateReply}
-                  onOpenAttachment={onOpenAttachment}
-                />
-              ))}
-            </div>
-          ) : null}
-          {replying ? (
-            <div className="reply-form-wrapper">
-              <h4>Reply to {reply.author.userName}</h4>
-              <CommentForm parentId={reply.id} onSubmit={createReply} />
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </article>
   );
 }
 

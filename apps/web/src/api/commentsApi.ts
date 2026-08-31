@@ -10,6 +10,7 @@ export interface CreateCommentPayload {
   userName: string;
   email: string;
   homePage?: string;
+  avatarUrl?: string;
   captchaId: string;
   captchaValue: string;
   text: string;
@@ -59,6 +60,10 @@ export class CommentsApi {
 
       if (payload.homePage) {
         body.set("homePage", payload.homePage);
+      }
+
+      if (payload.avatarUrl) {
+        body.set("avatarUrl", payload.avatarUrl);
       }
 
       return this.request<CommentItem>("/api/comments", {

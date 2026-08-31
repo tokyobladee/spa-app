@@ -10,7 +10,8 @@ export class CommentsMapper {
         id: comment.author.id,
         userName: comment.author.userName,
         email: comment.author.email,
-        homePage: comment.author.homePage
+        homePage: comment.author.homePage,
+        avatarUrl: comment.author.avatarUrl ?? null
       },
       sanitizedHtml: comment.sanitizedHtml,
       createdAt: comment.createdAt.toISOString(),
