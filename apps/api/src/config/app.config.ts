@@ -1,0 +1,107 @@
+import { registerAs } from "@nestjs/config";
+
+export interface EnvironmentVariables {
+  NODE_ENV?: string;
+  API_PORT?: string;
+  WEB_ORIGIN?: string;
+  DATABASE_HOST?: string;
+  DATABASE_PORT?: string;
+  DATABASE_USER?: string;
+  DATABASE_PASSWORD?: string;
+  DATABASE_NAME?: string;
+  REDIS_HOST?: string;
+  REDIS_PORT?: string;
+  RABBITMQ_URL?: string;
+  ELASTICSEARCH_NODE?: string;
+  JWT_SECRET?: string;
+  ADMIN_BOOTSTRAP_TOKEN?: string;
+  UPLOAD_ROOT?: string;
+  RATE_LIMIT_TTL_MS?: string;
+  RATE_LIMIT_LIMIT?: string;
+  COMMENT_LIST_CACHE_TTL_SECONDS?: string;
+}
+
+export interface AppConfig {
+  nodeEnv: string;
+  apiPort: number;
+  webOrigin: string;
+  database: {
+    host: string;
+    port: number;
+    username: string;
+    password: string;
+    name: string;
+  };
+  redis: {
+    host: string;
+    port: number;
+  };
+  rabbitmqUrl: string;
+  elasticsearchNode: string;
+  jwtSecret: string;
+  adminBootstrapToken: string;
+  uploadRoot: string;
+  rateLimit: {
+    ttlMilliseconds: number;
+    limit: number;
+  };
+  commentListCacheTtlSeconds: number;
+}
+
+export const appConfig = registerAs("app", (): AppConfig => {
+  const env = process.env as EnvironmentVariables;
+
+  return {
+    nodeEnv: env.NODE_ENV ?? "development",
+    apiPort: Number(env.API_PORT ?? 3000),
+    webOrigin: env.WEB_ORIGIN ?? "http://localhost:5173",
+    database: {
+      host: env.DATABASE_HOST ?? "localhost",
+      port: Number(env.DATABASE_PORT ?? 3306),
+      username: env.DATABASE_USER ?? "comments",
+      password: env.DATABASE_PASSWORD ?? "comments",
+      name: env.DATABASE_NAME ?? "comments_spa"
+    },
+    redis: {
+      host: env.REDIS_HOST ?? "localhost",
+      port: Number(env.REDIS_PORT ?? 6379)
+    },
+    rabbitmqUrl: env.RABBITMQ_URL ?? "amqp://comments:comments@localhost:5672",
+    elasticsearchNode: env.ELASTICSEARCH_NODE ?? "http://localhost:9200",
+    jwtSecret: env.JWT_SECRET ?? "change-me-in-local-env",
+    adminBootstrapToken: env.ADMIN_BOOTSTRAP_TOKEN ?? "local-bootstrap-token",
+    uploadRoot: env.UPLOAD_ROOT ?? "storage/uploads",
+    rateLimit: {
+      ttlMilliseconds: Number(env.RATE_LIMIT_TTL_MS ?? 60000),
+      limit: Number(env.RATE_LIMIT_LIMIT ?? 120)
+    },
+    commentListCacheTtlSeconds: Number(env.COMMENT_LIST_CACHE_TTL_SECONDS ?? 30)
+  };
+});
+
+export function validateEnvironment(env: EnvironmentVariables) {
+  const numericValues = {
+    API_PORT: env.API_PORT,
+    DATABASE_PORT: env.DATABASE_PORT,
+    REDIS_PORT: env.REDIS_PORT,
+    RATE_LIMIT_TTL_MS: env.RATE_LIMIT_TTL_MS,
+    RATE_LIMIT_LIMIT: env.RATE_LIMIT_LIMIT,
+    COMMENT_LIST_CACHE_TTL_SECONDS: env.COMMENT_LIST_CACHE_TTL_SECONDS
+  };
+
+  for (const [key, value] of Object.entries(numericValues)) {
+    if (value !== undefined && Number.isNaN(Number(value))) {
+      throw new Error(`${key} must be a number`);
+    }
+  }
+
+  if (env.JWT_SECRET === "change-me-in-local-env" && env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET must be changed in production");
+  }
+
+  if (env.ADMIN_BOOTSTRAP_TOKEN === "local-bootstrap-token" && env.NODE_ENV === "production") {
+    throw new Error("ADMIN_BOOTSTRAP_TOKEN must be changed in production");
+  }
+
+  return env;
+}
