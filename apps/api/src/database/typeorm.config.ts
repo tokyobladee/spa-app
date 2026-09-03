@@ -6,6 +6,7 @@ import { CaptchaChallengeEntity } from "../captcha/entities/captcha-challenge.en
 import { CommentEntity } from "../comments/entities/comment.entity";
 import { UserEntity } from "../users/entities/user.entity";
 import { CreateCoreSchema1725100000000 } from "./migrations/1725100000000-create-core-schema";
+import { AddUserAvatar1725100000001 } from "./migrations/1725100000001-add-user-avatar";
 
 config({ path: "../../.env" });
 config();
@@ -24,6 +25,6 @@ export default new DataSource({
     CaptchaChallengeEntity,
     AuthUserEntity
   ],
-  migrations: [CreateCoreSchema1725100000000],
+  migrations: [CreateCoreSchema1725100000000, AddUserAvatar1725100000001],
   synchronize: false
 });
