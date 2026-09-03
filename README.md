@@ -25,6 +25,39 @@ Comments SPA is a production-oriented threaded comments application. Users can c
 - Docker Compose
 - Jest, Supertest, Docker smoke tests, and k6
 
+## Docker Quick Start
+
+Create the environment file:
+
+```bash
+cp .env.example .env
+```
+
+Build and start all services:
+
+```bash
+docker compose up -d --build
+```
+
+Run database migrations:
+
+```bash
+docker compose exec api pnpm --filter @comments/api migration:run:prod
+```
+
+Open the application:
+
+- SPA: `http://localhost:5173`
+- API: `http://localhost:3000`
+- RabbitMQ management UI: `http://localhost:15672`
+- Elasticsearch: `http://localhost:9200`
+
+Stop the stack:
+
+```bash
+docker compose down
+```
+
 ## Getting Started
 
 Install dependencies:
